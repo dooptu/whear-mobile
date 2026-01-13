@@ -26,7 +26,10 @@ export type MainStackParamList = {
   [ROUTES.OUTFIT_GENERATOR]: undefined;
   [ROUTES.OUTFIT_RESULTS]: undefined;
   [ROUTES.OUTFIT_DETAIL]: { outfitId: string };
-  [ROUTES.OUTFIT_HISTORY]: undefined;
+
+  // UPDATED: optional params so Home can navigate safely without breaking the stack
+  [ROUTES.OUTFIT_HISTORY]: { mode?: 'today' | 'all'; acceptedIds?: string[] } | undefined;
+
   [ROUTES.CATALOG]: { missingCategory?: string };
   [ROUTES.UPGRADE]: undefined;
 };
@@ -41,7 +44,3 @@ declare global {
     interface RootParamList extends RootStackParamList {}
   }
 }
-
-
-
-

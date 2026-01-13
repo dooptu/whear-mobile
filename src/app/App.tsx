@@ -11,6 +11,8 @@ import { AuthStack } from '../navigation/AuthStack';
 import { MainStack } from '../navigation/MainStack';
 import { useAuthStore } from '../features/authStore';
 import { useThemeStore } from '../features/themeStore';
+import 'react-native-gesture-handler';
+
 
 const App: React.FC = () => {
   const { isAuthenticated, checkAuth, isLoading } = useAuthStore();

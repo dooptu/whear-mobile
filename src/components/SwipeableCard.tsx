@@ -1,246 +1,449 @@
-import React, { useRef, useState } from 'react';
+import React, { memo, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
-  Image,
   Dimensions,
-  ViewStyle,
+  TouchableOpacity,
+  Platform,
   Animated,
   PanResponder,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
+
 import { useAppTheme } from '../hooks/useAppTheme';
 import { AppText } from './AppText';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.85;
-const CARD_HEIGHT = CARD_WIDTH * 1.4;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const CARD_WIDTH = SCREEN_WIDTH * 0.82;
+const CARD_HEIGHT = CARD_WIDTH * 1.28;
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.26;
 
-interface SwipeableCardProps {
-  outfit: {
-    id: string;
-    imageUri: string;
-    title: string;
-    subtitle: string;
-    reason: string;
-  };
-  index: number;
+type Outfit = {
+  id: string;
+  imageUri: string;
+  title: string;
+  subtitle: string;
+  handle: string;
+  reason: string;
+};
+
+interface Props {
+  outfit: Outfit;
+  isActive: boolean;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
-  isActive: boolean;
-  style?: ViewStyle;
+  style?: any;
 }
 
-export const SwipeableCard: React.FC<SwipeableCardProps> = ({
+export const SwipeableCard = memo(function SwipeableCard({
   outfit,
-  index,
+  isActive,
   onSwipeLeft,
   onSwipeRight,
-  isActive,
   style,
-}) => {
-  const { colors, borderRadius, shadows } = useAppTheme();
+}: Props) {
+  const { borderRadius, blur } = useAppTheme();
 
   const translateX = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(isActive ? 1 : 0.95)).current;
-  const [overlayColor, setOverlayColor] = useState<string>('transparent');
+  const scale = useRef(new Animated.Value(isActive ? 1 : 0.965)).current;
+  const likeOpacity = useRef(new Animated.Value(0)).current;
+  const nopeOpacity = useRef(new Animated.Value(0)).current;
+
+  // Memoize callbacks to prevent recreation
+  const handleSwipeLeft = useCallback(() => {
+    onSwipeLeft();
+  }, [onSwipeLeft]);
+
+  const handleSwipeRight = useCallback(() => {
+    onSwipeRight();
+  }, [onSwipeRight]);
+
+  // Update scale when isActive changes
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: isActive ? 1 : 0.965,
+      useNativeDriver: true,
+      damping: 14,
+      stiffness: 180,
+    }).start();
+  }, [isActive, scale]);
+
+  // Reset card position when it becomes inactive
+  useEffect(() => {
+    if (!isActive) {
+      translateX.setValue(0);
+      translateY.setValue(0);
+      likeOpacity.setValue(0);
+      nopeOpacity.setValue(0);
+    }
+  }, [isActive, translateX, translateY, likeOpacity, nopeOpacity]);
 
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => isActive,
       onMoveShouldSetPanResponder: (_, gestureState) => {
         if (!isActive) return false;
-        const { dx, dy } = gestureState;
-        return Math.abs(dx) > 4 || Math.abs(dy) > 4;
+        // Only activate if movement is significant
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
       },
       onPanResponderGrant: () => {
-        Animated.spring(scale, {
-          toValue: 0.97,
-          useNativeDriver: true,
-        }).start();
+        // Stop any ongoing animations
+        translateX.stopAnimation();
+        translateY.stopAnimation();
+        // Set offset to current value
+        translateX.setOffset((translateX as any)._value || 0);
+        translateY.setOffset((translateY as any)._value || 0);
+        translateX.setValue(0);
+        translateY.setValue(0);
       },
       onPanResponderMove: (_, gestureState) => {
-        translateX.setValue(gestureState.dx);
-        translateY.setValue(gestureState.dy);
+        if (!isActive) return;
         
-        // Update overlay color based on gesture
-        if (gestureState.dx < -SWIPE_THRESHOLD / 2) {
-          setOverlayColor(colors.error);
-        } else if (gestureState.dx > SWIPE_THRESHOLD / 2) {
-          setOverlayColor(colors.success);
+        // Use setValue for immediate updates (native driver handles this efficiently)
+        translateX.setValue(gestureState.dx);
+        translateY.setValue(gestureState.dy * 0.22);
+
+        // Calculate and update opacities efficiently
+        const xValue = gestureState.dx;
+        const threshold = SWIPE_THRESHOLD * 0.75;
+        
+        if (xValue > 0) {
+          // Swiping right
+          const opacity = Math.min(1, xValue / threshold);
+          likeOpacity.setValue(opacity);
+          nopeOpacity.setValue(0);
+        } else if (xValue < 0) {
+          // Swiping left
+          const opacity = Math.min(1, -xValue / threshold);
+          nopeOpacity.setValue(opacity);
+          likeOpacity.setValue(0);
         } else {
-          setOverlayColor('transparent');
+          likeOpacity.setValue(0);
+          nopeOpacity.setValue(0);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (!isActive) {
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
+        translateX.flattenOffset();
+        translateY.flattenOffset();
+
+        const dx = gestureState.dx;
+        const shouldLeft = dx < -SWIPE_THRESHOLD;
+        const shouldRight = dx > SWIPE_THRESHOLD;
+
+        if (shouldLeft) {
+          // Swipe left - animate off screen
+          Animated.parallel([
+            Animated.timing(translateX, {
+              toValue: -SCREEN_WIDTH * 1.5,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(translateY, {
+              toValue: gestureState.dy * 0.3,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(nopeOpacity, {
+              toValue: 0,
+              duration: 150,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            // Reset after animation completes
+            translateX.setValue(0);
+            translateY.setValue(0);
+            likeOpacity.setValue(0);
+            nopeOpacity.setValue(0);
+            handleSwipeLeft();
+          });
           return;
         }
 
-        const { dx } = gestureState;
-        const shouldSwipeLeft = dx < -SWIPE_THRESHOLD;
-        const shouldSwipeRight = dx > SWIPE_THRESHOLD;
+        if (shouldRight) {
+          // Swipe right - animate off screen
+          Animated.parallel([
+            Animated.timing(translateX, {
+              toValue: SCREEN_WIDTH * 1.5,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(translateY, {
+              toValue: gestureState.dy * 0.3,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(likeOpacity, {
+              toValue: 0,
+              duration: 150,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            // Reset after animation completes
+            translateX.setValue(0);
+            translateY.setValue(0);
+            likeOpacity.setValue(0);
+            nopeOpacity.setValue(0);
+            handleSwipeRight();
+          });
+          return;
+        }
 
-        if (shouldSwipeLeft) {
-          Animated.spring(translateX, {
-            toValue: -SCREEN_WIDTH * 1.5,
-            useNativeDriver: true,
-          }).start(() => {
-            onSwipeLeft();
-          });
-        } else if (shouldSwipeRight) {
-          Animated.spring(translateX, {
-            toValue: SCREEN_WIDTH * 1.5,
-            useNativeDriver: true,
-          }).start(() => {
-            onSwipeRight();
-          });
-        } else {
+        // Spring back to center
+        Animated.parallel([
           Animated.spring(translateX, {
             toValue: 0,
             useNativeDriver: true,
-          }).start();
+            damping: 15,
+            stiffness: 200,
+            tension: 100,
+          }),
           Animated.spring(translateY, {
             toValue: 0,
             useNativeDriver: true,
-          }).start();
-          Animated.spring(scale, {
-            toValue: 1,
+            damping: 15,
+            stiffness: 200,
+            tension: 100,
+          }),
+          Animated.timing(likeOpacity, {
+            toValue: 0,
+            duration: 200,
             useNativeDriver: true,
-          }).start();
-        }
+          }),
+          Animated.timing(nopeOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      },
+      onPanResponderTerminate: () => {
+        // Handle interruption (e.g., by another gesture)
+        translateX.flattenOffset();
+        translateY.flattenOffset();
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            damping: 15,
+            stiffness: 200,
+          }),
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            damping: 15,
+            stiffness: 200,
+          }),
+        ]).start();
       },
     })
   ).current;
 
-  const rotation = translateX.interpolate({
+  // Calculate rotation based on translateX - use native driver compatible interpolation
+  const rotate = translateX.interpolate({
     inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
     outputRange: ['-12deg', '0deg', '12deg'],
     extrapolate: 'clamp',
   });
 
-  const overlayOpacity = translateX.interpolate({
-    inputRange: [-SWIPE_THRESHOLD, 0, SWIPE_THRESHOLD],
-    outputRange: [0.3, 0, 0.3],
-    extrapolate: 'clamp',
-  });
-
-  if (!isActive && index > 1) {
-    return null; // Only render 2 cards behind
-  }
+  const cardStyle = {
+    transform: [
+      { translateX },
+      { translateY },
+      { rotate },
+      { scale },
+    ],
+  };
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, style]} collapsable={false}>
       <Animated.View
-        style={[
-          styles.card,
-          {
-            width: CARD_WIDTH,
-            height: CARD_HEIGHT,
-            borderRadius: borderRadius.xl,
-            backgroundColor: colors.glassSurface,
-            ...shadows.glassStrong,
-          },
-          {
-            transform: [
-              { translateX },
-              { translateY },
-              { rotate: rotation },
-              { scale },
-            ],
-          },
-        ]}
-        {...panResponder.panHandlers}
+        style={[styles.card, { borderRadius: borderRadius.xl }, cardStyle]}
+        {...(isActive ? panResponder.panHandlers : {})}
+        collapsable={false}
       >
         <Image
           source={{ uri: outfit.imageUri }}
           style={styles.image}
-          resizeMode="cover"
+          contentFit="cover"
+          transition={200}
+          cachePolicy="disk"
+          recyclingKey={outfit.id}
+          priority="high"
         />
 
-        {/* Overlay for swipe feedback */}
-        <Animated.View
-          style={[
-            styles.overlay,
-            {
-              opacity: overlayOpacity,
-              backgroundColor: overlayColor,
-            },
-          ]}
-        />
+        {/* soft scrim bottom */}
+        <View style={styles.bottomScrim} />
 
-        {/* Bottom overlay with text */}
-        <View style={styles.textOverlay}>
-          <View style={styles.scrim} />
-          <View style={styles.textContent}>
-            <AppText variant="h1" overlay style={styles.title}>
-              {outfit.title}
+        {/* labels */}
+        <Animated.View 
+          style={[styles.labelWrap, styles.labelRight, { opacity: likeOpacity }]}
+          pointerEvents="none"
+        >
+          <View style={styles.labelPill}>
+            <AppText overlay variant="caption" style={styles.labelText}>
+              FIT TODAY ✓
             </AppText>
-            <AppText variant="body" overlay style={styles.subtitle}>
-              {outfit.subtitle}
+          </View>
+        </Animated.View>
+
+        <Animated.View 
+          style={[styles.labelWrap, styles.labelLeft, { opacity: nopeOpacity }]}
+          pointerEvents="none"
+        >
+          <View style={styles.labelPill}>
+            <AppText overlay variant="caption" style={styles.labelText}>
+              NOT TODAY ✕
             </AppText>
-            <AppText variant="caption" overlay style={styles.reason}>
-              Because: {outfit.reason}
-            </AppText>
+          </View>
+        </Animated.View>
+
+        {/* editorial text */}
+        <View style={styles.content} pointerEvents="box-none">
+          <AppText overlay variant="h1" numberOfLines={1} style={{ fontWeight: '800' }}>
+            {outfit.title}
+          </AppText>
+          <AppText overlay muted variant="h2" numberOfLines={1} style={{ marginTop: 2 }}>
+            {outfit.subtitle}
+          </AppText>
+
+          <AppText overlay muted variant="tiny" style={{ marginTop: 6 }}>
+            {outfit.handle}
+          </AppText>
+
+          <AppText overlay muted variant="caption" numberOfLines={2} style={{ marginTop: 10 }}>
+            Because: {outfit.reason}
+          </AppText>
+
+          {/* CTA buttons */}
+          <View style={styles.ctaRow} pointerEvents="box-none">
+            <TouchableOpacity 
+              activeOpacity={0.8} 
+              style={styles.cta}
+              onPress={() => {}}
+            >
+              {Platform.OS === 'ios' ? (
+                <BlurView intensity={blur.medium} tint="light" style={styles.ctaInner}>
+                  <AppText overlay variant="caption" style={{ fontWeight: '700' }}>
+                    Details
+                  </AppText>
+                </BlurView>
+              ) : (
+                <View style={[styles.ctaInner, styles.ctaAndroid]}>
+                  <AppText overlay variant="caption" style={{ fontWeight: '700' }}>
+                    Details
+                  </AppText>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              activeOpacity={0.8} 
+              style={styles.cta}
+              onPress={() => {}}
+            >
+              {Platform.OS === 'ios' ? (
+                <BlurView intensity={blur.medium} tint="light" style={styles.ctaInner}>
+                  <AppText overlay variant="caption" style={{ fontWeight: '700' }}>
+                    Wear Today
+                  </AppText>
+                </BlurView>
+              ) : (
+                <View style={[styles.ctaInner, styles.ctaAndroid]}>
+                  <AppText overlay variant="caption" style={{ fontWeight: '700' }}>
+                    Wear Today
+                  </AppText>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </Animated.View>
     </View>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo - only re-render if props actually change
+  return (
+    prevProps.outfit.id === nextProps.outfit.id &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.outfit.imageUri === nextProps.outfit.imageUri
+  );
+});
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    alignItems: 'center',
+  container: { 
+    position: 'absolute', 
+    alignItems: 'center', 
     justifyContent: 'center',
   },
   card: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
-  image: {
-    width: '100%',
+  image: { 
+    width: '100%', 
     height: '100%',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 24,
-  },
-  textOverlay: {
+
+  bottomScrim: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
-    paddingBottom: 32,
-    paddingHorizontal: 24,
+    bottom: 0,
+    height: 180,
+    backgroundColor: 'rgba(0,0,0,0.28)',
   },
-  scrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+
+  labelWrap: { 
+    position: 'absolute', 
+    top: 20, 
+    zIndex: 10,
   },
-  textContent: {
-    zIndex: 1,
+  labelLeft: { left: 16 },
+  labelRight: { right: 16 },
+  labelPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
   },
-  title: {
-    marginBottom: 4,
-    fontWeight: '700',
+  labelText: { fontWeight: '800', letterSpacing: 0.6 },
+
+  content: { 
+    position: 'absolute', 
+    left: 18, 
+    right: 18, 
+    bottom: 18,
   },
-  subtitle: {
-    marginBottom: 8,
-    opacity: 0.9,
+  ctaRow: { 
+    marginTop: 14, 
+    flexDirection: 'row', 
+    gap: 10,
   },
-  reason: {
-    opacity: 0.8,
+  cta: { 
+    flex: 1, 
+    borderRadius: 999, 
+    overflow: 'hidden',
+  },
+  ctaInner: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaAndroid: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
   },
 });
-

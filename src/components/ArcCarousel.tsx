@@ -1,186 +1,142 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native';
-import { useAppTheme } from '../hooks/useAppTheme';
+import React, { memo, useMemo } from 'react';
+import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAppTheme } from '../hooks/useAppTheme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ARC_RADIUS = SCREEN_WIDTH * 0.6;
-const THUMBNAIL_SIZE = 56;
-const CENTER_THUMBNAIL_SIZE = 72;
-const ARC_ANGLE = 120; // degrees
-const ITEM_COUNT = 8; // Number of thumbnails in the arc
+const ARC_RADIUS = SCREEN_WIDTH * 0.58;
+const ARC_ANGLE = 118;
+const THUMB = 52;
+const CENTER = 70;
 
-interface ArcCarouselItem {
+type Item = {
   id: string;
   imageUri: string;
   isAccepted?: boolean;
   isRejected?: boolean;
-}
+};
 
-interface ArcCarouselProps {
-  items: ArcCarouselItem[];
-  activeIndex: number;
-  onItemPress: (index: number) => void;
-}
-
-export const ArcCarousel: React.FC<ArcCarouselProps> = ({
+export const ArcCarousel = memo(function ArcCarousel({
   items,
   activeIndex,
   onItemPress,
-}) => {
+}: {
+  items: Item[];
+  activeIndex: number;
+  onItemPress: (index: number) => void;
+}) {
   const { colors } = useAppTheme();
 
-  const getAngleForIndex = (index: number, total: number, centerIndex: number) => {
-    // Center the arc around the active index
-    const relativeIndex = index - centerIndex;
-    const startAngle = -ARC_ANGLE / 2;
-    const angleStep = ARC_ANGLE / Math.max(1, total - 1);
-    const baseAngle = startAngle + angleStep * (total / 2);
-    return baseAngle + angleStep * relativeIndex;
-  };
+  const visibleRange = 4; // show max 9 thumbs
+  const visible = useMemo(() => {
+    const start = Math.max(0, activeIndex - visibleRange);
+    const end = Math.min(items.length - 1, activeIndex + visibleRange);
+    const idxs: number[] = [];
+    for (let i = start; i <= end; i++) idxs.push(i);
+    return idxs;
+  }, [activeIndex, items.length]);
 
-  const getPositionForIndex = (index: number, total: number, centerIndex: number) => {
-    const angle = getAngleForIndex(index, total, centerIndex);
-    const radian = (angle * Math.PI) / 180;
-    const x = ARC_RADIUS * Math.sin(radian);
-    const y = -ARC_RADIUS * Math.cos(radian);
+  const step = ARC_ANGLE / Math.max(1, visible.length - 1);
+  const startAngle = -ARC_ANGLE / 2;
+
+  const pos = (slot: number) => {
+    const angle = startAngle + slot * step;
+    const rad = (angle * Math.PI) / 180;
+    const x = ARC_RADIUS * Math.sin(rad);
+    const y = ARC_RADIUS * (1 - Math.cos(rad));
     return { x, y };
   };
 
   return (
-    <View style={styles.container}>
-      {items.map((item, index) => {
-        const { x, y } = getPositionForIndex(index, items.length, activeIndex);
-        const isActive = index === activeIndex;
-        const distanceFromCenter = Math.abs(index - activeIndex);
+    <View pointerEvents="box-none" style={styles.wrap}>
+      <View style={styles.center}>
+        {visible.map((realIndex, slot) => {
+          const item = items[realIndex];
+          const isActive = realIndex === activeIndex;
+          const { x, y } = pos(slot);
 
-        const scale = isActive ? 1.2 : 1;
-        const opacity =
-          distanceFromCenter === 0
-            ? 1
-            : distanceFromCenter === 1
-            ? 0.7
-            : distanceFromCenter === 2
-            ? 0.4
-            : 0.2;
+          const size = isActive ? CENTER : THUMB;
+          const dist = Math.abs(realIndex - activeIndex);
+          const opacity = dist === 0 ? 1 : dist === 1 ? 0.75 : dist === 2 ? 0.55 : 0.35;
 
-        const size = isActive ? CENTER_THUMBNAIL_SIZE : THUMBNAIL_SIZE;
-
-        return (
-          <View
-            key={item.id}
-            style={[
-              styles.thumbnailContainer,
-              {
-                width: size,
-                height: size,
-                borderRadius: size / 2,
-                transform: [
-                  { translateX: x },
-                  { translateY: y },
-                  { scale },
-                ],
-                opacity,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              onPress={() => onItemPress(index)}
-              activeOpacity={0.8}
-              style={styles.thumbnailButton}
+          return (
+            <View
+              key={item.id}
+              style={[
+                styles.item,
+                {
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  transform: [{ translateX: x }, { translateY: y }],
+                  opacity,
+                },
+              ]}
             >
-              {/* Ring for active item */}
-              {isActive && (
-                <View
-                  style={[
-                    styles.activeRing,
-                    {
-                      width: size + 4,
-                      height: size + 4,
-                      borderRadius: (size + 4) / 2,
-                      borderColor: colors.accent,
-                    },
-                  ]}
+              <TouchableOpacity style={styles.press} activeOpacity={0.9} onPress={() => onItemPress(realIndex)}>
+                {isActive && (
+                  <View
+                    style={[
+                      styles.ring,
+                      {
+                        width: size + 6,
+                        height: size + 6,
+                        borderRadius: (size + 6) / 2,
+                        borderColor: colors.accent,
+                      },
+                    ]}
+                  />
+                )}
+
+                <Image
+                  source={{ uri: item.imageUri }}
+                  style={{
+                    width: size - 6,
+                    height: size - 6,
+                    borderRadius: (size - 6) / 2,
+                  }}
+                  contentFit="cover"
+                  transition={120}
+                  cachePolicy="disk"
+                  recyclingKey={item.id}
                 />
-              )}
-              
-              {/* Thumbnail image */}
-              <Image
-                source={{ uri: item.imageUri }}
-                style={[
-                  styles.thumbnailImage,
-                  {
-                    width: size - 4,
-                    height: size - 4,
-                    borderRadius: (size - 4) / 2,
-                  },
-                ]}
-                resizeMode="cover"
-              />
-              
-              {/* Status indicators */}
-              {item.isAccepted && (
-                <View style={styles.statusBadge}>
-                  <Icon name="check" size={16} color={colors.success} />
-                </View>
-              )}
-              
-              {item.isRejected && (
-                <View style={[styles.statusBadge, { backgroundColor: colors.error }]}>
-                  <Icon name="close" size={16} color="#FFFFFF" />
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        );
-      })}
+
+                {item.isAccepted && (
+                  <View style={styles.badge}>
+                    <Icon name="check" size={14} color={colors.success} />
+                  </View>
+                )}
+                {item.isRejected && (
+                  <View style={[styles.badge, styles.badgeReject]}>
+                    <Icon name="close" size={14} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
-  container: {
+  wrap: { position: 'absolute', left: 0, right: 0, bottom: 18, alignItems: 'center' },
+  center: { width: ARC_RADIUS * 2, height: ARC_RADIUS * 0.92, alignItems: 'center', justifyContent: 'center' },
+  item: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  press: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  ring: { position: 'absolute', borderWidth: 2, backgroundColor: 'rgba(255,255,255,0.06)' },
+  badge: {
     position: 'absolute',
-    bottom: 120,
-    left: SCREEN_WIDTH / 2,
-    width: ARC_RADIUS * 2,
-    height: ARC_RADIUS * 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thumbnailContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thumbnailButton: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeRing: {
-    position: 'absolute',
-    borderWidth: 2,
-    backgroundColor: 'transparent',
-  },
-  thumbnailImage: {
-    backgroundColor: '#E5E5E5',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  statusBadge: {
-    position: 'absolute',
-    bottom: -2,
     right: -2,
+    bottom: -2,
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
+  badgeReject: { backgroundColor: 'rgba(239,68,68,0.92)' },
 });
-

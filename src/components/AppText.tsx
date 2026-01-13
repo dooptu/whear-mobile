@@ -5,38 +5,48 @@ import { useAppTheme } from '../hooks/useAppTheme';
 interface AppTextProps extends TextProps {
   variant?: 'display' | 'h1' | 'h2' | 'h3' | 'body' | 'caption' | 'tiny';
   color?: string;
-  overlay?: boolean; // For text overlays on images
+  overlay?: boolean;
+  muted?: boolean;
 }
 
 export const AppText: React.FC<AppTextProps> = ({
   variant = 'body',
   color,
   overlay = false,
+  muted = false,
   style,
   children,
   ...props
 }) => {
   const { colors, typography } = useAppTheme();
-  
-  let textColor = color || colors.textPrimary;
-  if (overlay) {
-    textColor = color || colors.textOverlay;
-  }
 
-  const textStyle = [
-    typography[variant],
-    { color: textColor },
-    overlay && {
-      textShadowColor: 'rgba(0, 0, 0, 0.3)',
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 4,
-    },
-    style,
-  ];
+  const baseColor = overlay
+    ? muted
+      ? colors.textOverlayMuted
+      : colors.textOverlay
+    : muted
+    ? colors.textSecondary
+    : colors.textPrimary;
 
   return (
-    <Text style={textStyle} {...props}>
+    <Text
+      style={[
+        typography[variant],
+        { color: color ?? baseColor },
+        overlay && styles.overlayShadow,
+        style,
+      ]}
+      {...props}
+    >
       {children}
     </Text>
   );
 };
+
+const styles = StyleSheet.create({
+  overlayShadow: {
+    textShadowColor: 'rgba(0,0,0,0.28)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 10,
+  },
+});

@@ -1,317 +1,350 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Image } from 'expo-image';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { AppText } from '../../components/AppText';
 import { SwipeableCard } from '../../components/SwipeableCard';
 import { ArcCarousel } from '../../components/ArcCarousel';
 import { MainStackParamList } from '../../navigation/types';
 import { ROUTES } from '../../constants/routes';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTodayCollectionStore } from '../../stores/todayCollectionStore';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.85;
-const CARD_HEIGHT = CARD_WIDTH * 1.4;
-
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
-interface OutfitSuggestion {
+export interface OutfitSuggestion {
   id: string;
   imageUri: string;
   title: string;
   subtitle: string;
+  handle: string;
   reason: string;
+  bgGradient: [string, string, string];
   isAccepted?: boolean;
   isRejected?: boolean;
 }
 
-// Mock data - replace with actual API call
+// Optimize image URLs
+const img = (u: string) => u.replace('w=1200', 'w=900');
+
 const mockOutfits: OutfitSuggestion[] = [
   {
     id: '1',
-    imageUri: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800',
-    title: 'Casual Summer Look',
-    subtitle: 'Light & breezy',
+    imageUri: img('https://images.unsplash.com/photo-1520975916090-3105956dac38?w=1200&auto=format&fit=crop'),
+    title: 'Body language',
+    subtitle: 'with maya daryen',
+    handle: '@maya.daryen',
     reason: 'Hot day + Casual + Light fabric',
+    bgGradient: ['#B9B0AC', '#C7C0BD', '#D8D6D3'],
   },
   {
     id: '2',
-    imageUri: 'https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=800',
+    imageUri: img('https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200&auto=format&fit=crop'),
     title: 'Office Ready',
-    subtitle: 'Professional & polished',
-    reason: 'Work day + Formal + Comfortable',
+    subtitle: 'polished silhouette',
+    handle: '@workwear.daily',
+    reason: 'Work day + Smart + Comfortable',
+    bgGradient: ['#B7B1B2', '#CFC8C9', '#EAE6E6'],
   },
   {
     id: '3',
-    imageUri: 'https://images.unsplash.com/photo-1506629905607-5c8b5c8b5c8b?w=800',
-    title: 'Evening Elegance',
-    subtitle: 'Date night perfect',
-    reason: 'Evening + Date + Elegant',
+    imageUri: img('https://images.unsplash.com/photo-1520975732144-442d66dffb6e?w=1200&auto=format&fit=crop'),
+    title: 'Layered Comfort',
+    subtitle: 'transitional fit',
+    handle: '@layers.club',
+    reason: 'Cool day + Versatile + Layered',
+    bgGradient: ['#B8B7B4', '#D2D1CD', '#F0EFEC'],
   },
   {
     id: '4',
-    imageUri: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800',
-    title: 'Weekend Vibes',
-    subtitle: 'Relaxed & comfortable',
-    reason: 'Weekend + Casual + Cozy',
+    imageUri: img('https://images.unsplash.com/photo-1520975867722-01286f6abf7d?w=1200&auto=format&fit=crop'),
+    title: 'Bold Statement',
+    subtitle: 'make an impact',
+    handle: '@bold.room',
+    reason: 'Special + Bold + Confident',
+    bgGradient: ['#B9B2B8', '#D4CFD6', '#F1EEF3'],
   },
   {
     id: '5',
-    imageUri: 'https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=800',
-    title: 'Sporty Active',
-    subtitle: 'Ready to move',
-    reason: 'Active + Sport + Breathable',
+    imageUri: img('https://images.unsplash.com/photo-1520975747456-4097f9c2a5c2?w=1200&auto=format&fit=crop'),
+    title: 'Evening Elegance',
+    subtitle: 'date-night glow',
+    handle: '@night.edit',
+    reason: 'Evening + Date + Elegant',
+    bgGradient: ['#B5B2B0', '#CDC7C4', '#EEEAE7'],
   },
   {
     id: '6',
-    imageUri: 'https://images.unsplash.com/photo-1506629905607-5c8b5c8b5c8b?w=800',
-    title: 'Layered Comfort',
-    subtitle: 'Perfect for transitions',
-    reason: 'Cool day + Versatile + Layered',
+    imageUri: img('https://images.unsplash.com/photo-1520975904416-6fd35a5a8e3a?w=1200&auto=format&fit=crop'),
+    title: 'Summer Breeze',
+    subtitle: 'light drape',
+    handle: '@summer.set',
+    reason: 'Sunny + Casual + Airy',
+    bgGradient: ['#B8C6D4', '#D5E0EA', '#F3F6FA'],
   },
   {
     id: '7',
-    imageUri: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800',
-    title: 'Minimalist Chic',
-    subtitle: 'Less is more',
-    reason: 'Any day + Minimal + Timeless',
+    imageUri: img('https://images.unsplash.com/photo-1520975833856-63c8c9e98a4a?w=1200&auto=format&fit=crop'),
+    title: 'Street Clean',
+    subtitle: 'quiet luxury',
+    handle: '@street.clean',
+    reason: 'City + Neutral + Crisp',
+    bgGradient: ['#B9B7C0', '#D7D5DF', '#F4F3F7'],
   },
   {
     id: '8',
-    imageUri: 'https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=800',
-    title: 'Bold Statement',
-    subtitle: 'Make an impact',
-    reason: 'Special + Bold + Confident',
+    imageUri: img('https://images.unsplash.com/photo-1520975747456-4097f9c2a5c2?w=1200&auto=format&fit=crop'),
+    title: 'Minimalist Chic',
+    subtitle: 'less is more',
+    handle: '@studio.line',
+    reason: 'Any day + Minimal + Timeless',
+    bgGradient: ['#BFC7D1', '#D7DCE3', '#F0F1F3'],
   },
 ];
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { colors, typography, spacing, borderRadius, blur: blurAmount } = useAppTheme();
-  
+  const { colors, spacing, borderRadius, blur } = useAppTheme();
+  const { addAccepted, removeAccepted } = useTodayCollectionStore();
+
   const [outfits, setOutfits] = useState<OutfitSuggestion[]>(mockOutfits);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [swipeHistory, setSwipeHistory] = useState<Array<{ index: number; action: 'left' | 'right' }>>([]);
+  const [history, setHistory] = useState<Array<{ index: number; action: 'left' | 'right' }>>([]);
   
-  // Hide tab bar when this screen is focused
+  // Use ref to prevent stale closures
+  const isProcessingRef = useRef(false);
+
   useFocusEffect(
     React.useCallback(() => {
       const parent = navigation.getParent();
-      if (parent) {
-        parent.setOptions({
-          tabBarStyle: { display: 'none' },
-        });
-      }
-      
+      if (parent) parent.setOptions({ tabBarStyle: { display: 'none' } });
       return () => {
-        if (parent) {
-          parent.setOptions({
-            tabBarStyle: undefined,
-          });
-        }
+        if (parent) parent.setOptions({ tabBarStyle: undefined });
       };
     }, [navigation])
   );
 
-  const handleSwipeLeft = () => {
-    const currentOutfit = outfits[activeIndex];
-    if (currentOutfit) {
-      setOutfits((prev) =>
-        prev.map((outfit) =>
-          outfit.id === currentOutfit.id ? { ...outfit, isRejected: true } : outfit
-        )
-      );
-      setSwipeHistory((prev) => [...prev, { index: activeIndex, action: 'left' }]);
-      setActiveIndex((prev) => Math.min(prev + 1, outfits.length - 1));
-    }
-  };
+  // Prefetch images asynchronously without blocking
+  useEffect(() => {
+    const prefetchImages = async () => {
+      const urls = outfits.slice(0, 5).map((o) => o.imageUri);
+      try {
+        await Promise.all(urls.map(url => Image.prefetch(url).catch(() => {})));
+      } catch (error) {
+        // Silently fail - images will load on demand
+      }
+    };
+    prefetchImages();
+  }, [outfits]);
 
-  const handleSwipeRight = () => {
-    const currentOutfit = outfits[activeIndex];
-    if (currentOutfit) {
-      setOutfits((prev) =>
-        prev.map((outfit) =>
-          outfit.id === currentOutfit.id ? { ...outfit, isAccepted: true } : outfit
-        )
-      );
-      setSwipeHistory((prev) => [...prev, { index: activeIndex, action: 'right' }]);
-      setActiveIndex((prev) => Math.min(prev + 1, outfits.length - 1));
-    }
-  };
+  const active = outfits[activeIndex];
+  const bg = useMemo(
+    () => active?.bgGradient ?? (colors.backgroundGradient as any),
+    [active?.bgGradient, colors.backgroundGradient]
+  );
 
-  const handleUndo = () => {
-    if (swipeHistory.length === 0) return;
+  // Memoize callbacks to prevent unnecessary re-renders
+  const goNext = useCallback(() => {
+    setActiveIndex((prev) => {
+      const next = Math.min(prev + 1, outfits.length - 1);
+      return next;
+    });
+  }, [outfits.length]);
+
+  const onLeft = useCallback(() => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
     
-    const lastSwipe = swipeHistory[swipeHistory.length - 1];
-    setSwipeHistory((prev) => prev.slice(0, -1));
-    
+    const current = outfits[activeIndex];
+    if (!current) {
+      isProcessingRef.current = false;
+      return;
+    }
+
     setOutfits((prev) =>
-      prev.map((outfit, idx) =>
-        idx === lastSwipe.index
-          ? { ...outfit, isAccepted: false, isRejected: false }
-          : outfit
-      )
+      prev.map((o) => (o.id === current.id ? { ...o, isRejected: true, isAccepted: false } : o))
     );
+    setHistory((prev) => [...prev, { index: activeIndex, action: 'left' }]);
     
-    setActiveIndex(lastSwipe.index);
-  };
+    // Use setTimeout to ensure state updates complete before moving to next
+    setTimeout(() => {
+      goNext();
+      isProcessingRef.current = false;
+    }, 100);
+  }, [activeIndex, outfits, goNext]);
 
-  const handleThumbnailPress = (index: number) => {
-    setActiveIndex(index);
-  };
+  const onRight = useCallback(() => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
+    const current = outfits[activeIndex];
+    if (!current) {
+      isProcessingRef.current = false;
+      return;
+    }
 
-  const handleNext = () => {
-    // Navigate to Today's Collection screen (showing accepted outfits)
-    // Filter accepted outfits and pass them if needed
-    const acceptedOutfits = outfits.filter((outfit) => outfit.isAccepted);
-    navigation.navigate(ROUTES.OUTFIT_HISTORY);
-  };
+    setOutfits((prev) =>
+      prev.map((o) => (o.id === current.id ? { ...o, isAccepted: true, isRejected: false } : o))
+    );
+    addAccepted(current);
+    setHistory((prev) => [...prev, { index: activeIndex, action: 'right' }]);
+    
+    setTimeout(() => {
+      goNext();
+      isProcessingRef.current = false;
+    }, 100);
+  }, [activeIndex, outfits, goNext, addAccepted]);
 
-  const visibleCards = outfits.slice(activeIndex, activeIndex + 3);
+  const undo = useCallback(() => {
+    if (!history.length || isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
+    const last = history[history.length - 1];
+    const item = outfits[last.index];
+    if (!item) {
+      isProcessingRef.current = false;
+      return;
+    }
+
+    if (last.action === 'right') {
+      removeAccepted(item.id);
+    }
+
+    setHistory((prev) => prev.slice(0, -1));
+    setOutfits((prev) =>
+      prev.map((o, idx) => (idx === last.index ? { ...o, isAccepted: false, isRejected: false } : o))
+    );
+    setActiveIndex(last.index);
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 100);
+  }, [history, outfits, removeAccepted]);
+
+  const next = useCallback(() => {
+    const acceptedIds = outfits.filter((o) => o.isAccepted).map((o) => o.id);
+    navigation.navigate(ROUTES.OUTFIT_HISTORY, { 
+      mode: 'today', 
+      acceptedIds 
+    });
+  }, [outfits, navigation]);
+
+  // Only render visible cards (max 2 for performance)
+  const visibleCards = useMemo(
+    () => outfits.slice(activeIndex, activeIndex + 2),
+    [outfits, activeIndex]
+  );
   const cardOffset = 8;
 
   return (
     <View style={styles.container}>
-      {/* Animated Background Gradient */}
-      <LinearGradient
-        colors={colors.backgroundGradient as [string, string, ...string[]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
+      <LinearGradient 
+        colors={bg} 
+        start={{ x: 0.15, y: 0 }} 
+        end={{ x: 0.85, y: 1 }} 
+        style={StyleSheet.absoluteFill} 
       />
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <AppText variant="display" style={styles.headerTitle}>
-              Today
-            </AppText>
-          </View>
-          
+        <View style={[styles.header, { paddingHorizontal: spacing.xl }]}>
+          <AppText variant="display" overlay style={{ fontWeight: '800' }}>
+            Today
+          </AppText>
+
           <View style={styles.headerRight}>
-            {/* Hot Badge */}
-            <View
-              style={[
-                styles.badge,
-                {
-                  backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.glassSurface,
-                  borderColor: colors.glassBorder,
-                  borderRadius: borderRadius.full,
-                },
-              ]}
-            >
+            <View style={[styles.pill, { borderColor: colors.glassBorder }]}>
               {Platform.OS === 'ios' ? (
-                <BlurView intensity={blurAmount.medium} style={styles.badgeBlur}>
-                  <AppText variant="caption" style={styles.badgeText}>
+                <BlurView intensity={blur.medium} tint="light" style={styles.pillInner}>
+                  <AppText overlay variant="caption" style={{ fontWeight: '700' }}>
                     Hot 🔥
                   </AppText>
                 </BlurView>
               ) : (
-                <AppText variant="caption" style={styles.badgeText}>
-                  Hot 🔥
-                </AppText>
+                <View style={[styles.pillInner, styles.pillAndroid]}>
+                  <AppText overlay variant="caption" style={{ fontWeight: '700' }}>
+                    Hot 🔥
+                  </AppText>
+                </View>
               )}
             </View>
-            
-            {/* Next Button */}
-            <TouchableOpacity
-              onPress={handleNext}
-              style={[
-                styles.nextButton,
-                {
-                  backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.glassSurface,
-                  borderColor: colors.glassBorder,
-                  borderRadius: borderRadius.md,
-                },
-              ]}
-              activeOpacity={0.8}
+
+            <TouchableOpacity 
+              activeOpacity={0.8} 
+              onPress={next} 
+              style={[styles.pill, { borderColor: colors.glassBorder }]}
             >
               {Platform.OS === 'ios' ? (
-                <BlurView intensity={blurAmount.medium} style={styles.nextButtonBlur}>
-                  <AppText variant="body" style={styles.nextButtonText}>
+                <BlurView intensity={blur.medium} tint="light" style={[styles.pillInner, { paddingHorizontal: 14 }]}>
+                  <AppText overlay variant="body" style={{ fontWeight: '800' }}>
                     Next →
                   </AppText>
                 </BlurView>
               ) : (
-                <AppText variant="body" style={styles.nextButtonText}>
-                  Next →
-                </AppText>
+                <View style={[styles.pillInner, styles.pillAndroid, { paddingHorizontal: 14 }]}>
+                  <AppText overlay variant="body" style={{ fontWeight: '800' }}>
+                    Next →
+                  </AppText>
+                </View>
               )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Undo Button */}
-        {swipeHistory.length > 0 && (
-          <TouchableOpacity
-            onPress={handleUndo}
-            style={[
-              styles.undoButton,
-              {
-                backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.glassSurface,
-                borderColor: colors.glassBorder,
-                borderRadius: borderRadius.full,
-              },
-            ]}
-            activeOpacity={0.8}
+        {/* Undo */}
+        {history.length > 0 && (
+          <TouchableOpacity 
+            activeOpacity={0.8} 
+            onPress={undo} 
+            style={[styles.undo, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
           >
             {Platform.OS === 'ios' ? (
-              <BlurView intensity={blurAmount.medium} style={styles.undoButtonBlur}>
-                <Icon name="undo" size={20} color={colors.textPrimary} />
+              <BlurView intensity={blur.medium} tint="light" style={styles.undoInner}>
+                <Icon name="undo" size={20} color="rgba(255,255,255,0.92)" />
               </BlurView>
             ) : (
-              <Icon name="undo" size={20} color={colors.textPrimary} />
+              <View style={[styles.undoInner, styles.undoAndroid]}>
+                <Icon name="undo" size={20} color="rgba(255,255,255,0.92)" />
+              </View>
             )}
           </TouchableOpacity>
         )}
 
-        {/* Card Stack */}
-        <View style={styles.cardContainer}>
-          {visibleCards.length > 0 ? (
-            visibleCards.map((outfit, index) => {
-              const cardIndex = activeIndex + index;
-              const isActive = index === 0;
-              
-              return (
-                <SwipeableCard
-                  key={outfit.id}
-                  outfit={outfit}
-                  index={cardIndex}
-                  onSwipeLeft={handleSwipeLeft}
-                  onSwipeRight={handleSwipeRight}
-                  isActive={isActive}
-                  style={{
-                    zIndex: 10 - index,
-                    transform: [
-                      { translateX: index * cardOffset - cardOffset },
-                      { translateY: index * cardOffset },
-                    ],
-                  }}
-                />
-              );
-            })
-          ) : (
-            <View style={styles.emptyState}>
-              <AppText variant="h2" style={styles.emptyText}>
-                All done! 🎉
-              </AppText>
-              <AppText variant="body" style={styles.emptySubtext}>
-                Check your Today's Collection
-              </AppText>
-            </View>
-          )}
+        {/* Card stack */}
+        <View style={styles.cardZone} pointerEvents="box-none">
+          {visibleCards.map((o, idx) => (
+            <SwipeableCard
+              key={o.id}
+              outfit={o}
+              isActive={idx === 0}
+              onSwipeLeft={onLeft}
+              onSwipeRight={onRight}
+              style={{
+                zIndex: 20 - idx,
+                transform: [
+                  { translateX: idx * cardOffset - cardOffset }, 
+                  { translateY: idx * cardOffset }
+                ],
+              }}
+            />
+          ))}
         </View>
 
-        {/* Arc Carousel */}
-        <ArcCarousel
-          items={outfits}
-          activeIndex={activeIndex}
-          onItemPress={handleThumbnailPress}
+        <ArcCarousel 
+          items={outfits} 
+          activeIndex={activeIndex} 
+          onItemPress={(index) => {
+            if (!isProcessingRef.current) {
+              setActiveIndex(index);
+            }
+          }} 
         />
       </SafeAreaView>
     </View>
@@ -319,107 +352,64 @@ const HomeScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingTop: 10, 
+    paddingBottom: 18,
   },
-  safeArea: {
-    flex: 1,
+  headerRight: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerTitle: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
+
+  pill: { 
+    borderWidth: 1, 
+    borderRadius: 999, 
     overflow: 'hidden',
   },
-  badgeBlur: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  nextButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  nextButtonBlur: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  nextButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  undoButton: {
-    position: 'absolute',
-    left: 24,
-    top: 100,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    overflow: 'hidden',
-    zIndex: 100,
-  },
-  undoButtonBlur: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
+  pillInner: { 
+    paddingHorizontal: 12, 
+    paddingVertical: 8, 
+    alignItems: 'center', 
     justifyContent: 'center',
   },
-  cardContainer: {
-    flex: 1,
-    alignItems: 'center',
+  pillAndroid: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+
+  undo: { 
+    position: 'absolute', 
+    left: 18, 
+    top: 108, 
+    width: 42, 
+    height: 42, 
+    overflow: 'hidden', 
+    borderWidth: 1, 
+    zIndex: 200,
+  },
+  undoInner: { 
+    flex: 1, 
+    alignItems: 'center', 
     justifyContent: 'center',
-    paddingTop: 40,
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
+  undoAndroid: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
   },
-  emptyText: {
-    color: '#FFFFFF',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    color: '#FFFFFF',
-    opacity: 0.8,
-    textAlign: 'center',
+
+  cardZone: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingTop: 12,
   },
 });
 
 HomeScreen.displayName = 'HomeScreen';
 
 export { HomeScreen };
-
