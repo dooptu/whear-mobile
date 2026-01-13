@@ -11,7 +11,7 @@ import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
-export const AuthStack: React.FC = () => {
+const AuthStack: React.FC = () => {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -27,6 +27,10 @@ export const AuthStack: React.FC = () => {
     </Stack.Navigator>
   );
 };
+
+AuthStack.displayName = 'AuthStack';
+
+export { AuthStack };
 
 
 

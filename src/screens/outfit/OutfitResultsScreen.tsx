@@ -109,3 +109,5 @@ const styles = StyleSheet.create({
     padding: spacingConstants.lg,
   },
 });
+
+OutfitResultsScreen.displayName = 'OutfitResultsScreen';

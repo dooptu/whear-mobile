@@ -216,3 +216,5 @@ const styles = StyleSheet.create({
     marginLeft: -spacingConstants.md,
   },
 });
+
+RegisterScreen.displayName = 'RegisterScreen';

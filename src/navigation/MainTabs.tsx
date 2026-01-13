@@ -6,13 +6,14 @@ import { BlurView } from 'expo-blur';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { TAB_ROUTES } from '../constants/routes';
 import { MainTabParamList } from './types';
+import { HomeScreen } from '../screens/home/HomeScreen';
 import { ClosetScreen } from '../screens/closet/ClosetScreen';
 import { OutfitGeneratorScreen } from '../screens/outfit/OutfitGeneratorScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-export const MainTabs: React.FC = () => {
+const MainTabs: React.FC = () => {
   const { colors, borderRadius, blur: blurAmount } = useAppTheme();
 
   return (
@@ -56,10 +57,25 @@ export const MainTabs: React.FC = () => {
       }}
     >
       <Tab.Screen
+        name={TAB_ROUTES.HOME}
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => {
+            if (!Icon) return null;
+            return <Icon name="home" size={size || 24} color={color} />;
+          },
+          tabBarLabel: 'Today',
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tab.Screen
         name={TAB_ROUTES.CLOSET}
         component={ClosetScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Icon name="hanger" size={size || 24} color={color} />,
+          tabBarIcon: ({ color, size }) => {
+            if (!Icon) return null;
+            return <Icon name="hanger" size={size || 24} color={color} />;
+          },
           tabBarLabel: 'Closet',
         }}
       />
@@ -67,7 +83,10 @@ export const MainTabs: React.FC = () => {
         name={TAB_ROUTES.OUTFIT}
         component={OutfitGeneratorScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Icon name="tshirt-crew" size={size || 24} color={color} />,
+          tabBarIcon: ({ color, size }) => {
+            if (!Icon) return null;
+            return <Icon name="tshirt-crew" size={size || 24} color={color} />;
+          },
           tabBarLabel: 'Outfit',
         }}
       />
@@ -75,10 +94,17 @@ export const MainTabs: React.FC = () => {
         name={TAB_ROUTES.PROFILE}
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Icon name="account" size={size || 24} color={color} />,
+          tabBarIcon: ({ color, size }) => {
+            if (!Icon) return null;
+            return <Icon name="account" size={size || 24} color={color} />;
+          },
           tabBarLabel: 'Profile',
         }}
       />
     </Tab.Navigator>
   );
 };
+
+MainTabs.displayName = 'MainTabs';
+
+export { MainTabs };

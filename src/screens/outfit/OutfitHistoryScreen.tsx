@@ -124,3 +124,5 @@ const styles = StyleSheet.create({
     padding: spacingConstants.md,
   },
 });
+
+OutfitHistoryScreen.displayName = 'OutfitHistoryScreen';

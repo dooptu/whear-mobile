@@ -195,3 +195,5 @@ const styles = StyleSheet.create({
     marginTop: spacingConstants.sm,
   },
 });
+
+ForgotPasswordScreen.displayName = 'ForgotPasswordScreen';

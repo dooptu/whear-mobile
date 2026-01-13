@@ -1,26 +1,41 @@
-import React, { useEffect } from 'react';
+import 'expo-constants';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { PaperProvider } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useColorScheme } from 'react-native';
-// Ensure expo-constants is loaded early to provide PlatformConstants
-import 'expo-constants';
+import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { lightTheme, darkTheme } from '../constants/theme';
 import { AuthStack } from '../navigation/AuthStack';
 import { MainStack } from '../navigation/MainStack';
 import { useAuthStore } from '../features/authStore';
 import { useThemeStore } from '../features/themeStore';
+import 'react-native-gesture-handler';
+
 
 const App: React.FC = () => {
   const { isAuthenticated, checkAuth, isLoading } = useAuthStore();
   const { themeMode } = useThemeStore();
   const systemColorScheme = useColorScheme();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    // Ensure React Native runtime is ready
+    const initApp = async () => {
+      try {
+        await checkAuth();
+        // Small delay to ensure all modules are loaded
+        setTimeout(() => {
+          setIsReady(true);
+        }, 100);
+      } catch (error) {
+        console.error('App initialization error:', error);
+        setIsReady(true); // Still allow app to render
+      }
+    };
+    initApp();
+  }, [checkAuth]);
 
   const getTheme = () => {
     if (themeMode === 'auto') {
@@ -29,8 +44,13 @@ const App: React.FC = () => {
     return themeMode === 'dark' ? darkTheme : lightTheme;
   };
 
-  if (isLoading) {
-    return null; // Or a loading screen
+  // Show loading while checking auth or runtime not ready
+  if (isLoading || !isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
@@ -46,6 +66,8 @@ const App: React.FC = () => {
     </GestureHandlerRootView>
   );
 };
+
+App.displayName = 'App';
 
 export default App;
 

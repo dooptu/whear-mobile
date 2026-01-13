@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -161,3 +161,5 @@ const styles = StyleSheet.create({
     marginTop: spacingConstants.md,
   },
 });
+
+ResetPasswordScreen.displayName = 'ResetPasswordScreen';

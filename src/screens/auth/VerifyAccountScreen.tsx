@@ -161,3 +161,5 @@ const styles = StyleSheet.create({
     marginTop: spacingConstants.sm,
   },
 });
+
+VerifyAccountScreen.displayName = 'VerifyAccountScreen';

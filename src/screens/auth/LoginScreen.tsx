@@ -200,3 +200,5 @@ const styles = StyleSheet.create({
     marginLeft: -spacingConstants.md,
   },
 });
+
+LoginScreen.displayName = 'LoginScreen';

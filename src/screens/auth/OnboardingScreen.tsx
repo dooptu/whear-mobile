@@ -90,3 +90,5 @@ const styles = StyleSheet.create({
     marginVertical: spacingConstants.xs,
   },
 });
+
+OnboardingScreen.displayName = 'OnboardingScreen';

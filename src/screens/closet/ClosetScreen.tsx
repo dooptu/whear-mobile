@@ -288,3 +288,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+ClosetScreen.displayName = 'ClosetScreen';

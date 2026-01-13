@@ -303,3 +303,5 @@ const styles = StyleSheet.create({
     marginTop: spacingConstants.xl,
   },
 });
+
+EditProfileScreen.displayName = 'EditProfileScreen';

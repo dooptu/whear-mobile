@@ -1,6 +1,14 @@
 import { useColorScheme } from 'react-native';
 import { useThemeStore } from '../features/themeStore';
-import { brandColors, darkBrandColors, typography, spacing, borderRadius, shadows, blur } from '../constants/theme';
+import {
+  brandColors,
+  darkBrandColors,
+  typography,
+  spacing,
+  borderRadius,
+  shadows,
+  blur,
+} from '../constants/theme';
 
 export const useAppTheme = () => {
   const { themeMode } = useThemeStore();
@@ -9,13 +17,5 @@ export const useAppTheme = () => {
   const isDark = themeMode === 'dark' || (themeMode === 'auto' && systemColorScheme === 'dark');
   const colors = isDark ? darkBrandColors : brandColors;
 
-  return {
-    colors,
-    typography,
-    spacing,
-    borderRadius,
-    shadows,
-    blur,
-    isDark,
-  };
+  return { colors, typography, spacing, borderRadius, shadows, blur, isDark };
 };

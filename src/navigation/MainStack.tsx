@@ -12,10 +12,11 @@ import { OutfitDetailScreen } from '../screens/outfit/OutfitDetailScreen';
 import { OutfitHistoryScreen } from '../screens/outfit/OutfitHistoryScreen';
 import { CatalogScreen } from '../screens/catalog/CatalogScreen';
 import { UpgradeScreen } from '../screens/subscription/UpgradeScreen';
+import { CollectionsScreen } from '../screens/home/CollectionsScreen';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
-export const MainStack: React.FC = () => {
+const MainStack: React.FC = () => {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -32,9 +33,14 @@ export const MainStack: React.FC = () => {
       <Stack.Screen name={ROUTES.OUTFIT_HISTORY} component={OutfitHistoryScreen} />
       <Stack.Screen name={ROUTES.CATALOG} component={CatalogScreen} />
       <Stack.Screen name={ROUTES.UPGRADE} component={UpgradeScreen} />
+      <Stack.Screen name={ROUTES.COLLECTIONS} component={CollectionsScreen} />
     </Stack.Navigator>
   );
 };
+
+MainStack.displayName = 'MainStack';
+
+export { MainStack };
 
 
 

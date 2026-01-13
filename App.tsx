@@ -1,5 +1,6 @@
-import { registerRootComponent } from 'expo';
 import App from './src/app/App';
 
-export default registerRootComponent(App);
+// Expo's internal AppEntry already calls registerRootComponent(App).
+// Here we simply re-export the root component so AppEntry can use it.
+export default App;
 

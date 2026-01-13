@@ -228,3 +228,5 @@ const styles = StyleSheet.create({
     marginTop: spacingConstants.md,
   },
 });
+
+OutfitDetailScreen.displayName = 'OutfitDetailScreen';

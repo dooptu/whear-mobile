@@ -173,3 +173,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+UpgradeScreen.displayName = 'UpgradeScreen';

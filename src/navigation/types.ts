@@ -11,6 +11,7 @@ export type AuthStackParamList = {
 };
 
 export type MainTabParamList = {
+  [TAB_ROUTES.HOME]: undefined;
   [TAB_ROUTES.CLOSET]: undefined;
   [TAB_ROUTES.OUTFIT]: undefined;
   [TAB_ROUTES.PROFILE]: undefined;
@@ -25,9 +26,13 @@ export type MainStackParamList = {
   [ROUTES.OUTFIT_GENERATOR]: undefined;
   [ROUTES.OUTFIT_RESULTS]: undefined;
   [ROUTES.OUTFIT_DETAIL]: { outfitId: string };
-  [ROUTES.OUTFIT_HISTORY]: undefined;
+
+  // UPDATED: optional params so Home can navigate safely without breaking the stack
+  [ROUTES.OUTFIT_HISTORY]: { mode?: 'today' | 'all'; acceptedIds?: string[] } | undefined;
+
   [ROUTES.CATALOG]: { missingCategory?: string };
   [ROUTES.UPGRADE]: undefined;
+  [ROUTES.COLLECTIONS]: undefined;
 };
 
 export type RootStackParamList = {
@@ -40,7 +45,3 @@ declare global {
     interface RootParamList extends RootStackParamList {}
   }
 }
-
-
-
-

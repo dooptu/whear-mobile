@@ -6,39 +6,37 @@ export const ROUTES = {
   VERIFY_ACCOUNT: 'VerifyAccount',
   FORGOT_PASSWORD: 'ForgotPassword',
   RESET_PASSWORD: 'ResetPassword',
-  
+
   // Main
   MAIN_TABS: 'MainTabs',
-  
+
   // Profile
   PROFILE: 'Profile',
   EDIT_PROFILE: 'EditProfile',
   SETTINGS: 'Settings',
-  
+
   // Closet
   CLOSET: 'Closet',
   ADD_ITEM: 'AddItem',
   ITEM_DETAIL: 'ItemDetail',
-  
+
   // Outfit
   OUTFIT_GENERATOR: 'OutfitGenerator',
   OUTFIT_RESULTS: 'OutfitResults',
   OUTFIT_DETAIL: 'OutfitDetail',
   OUTFIT_HISTORY: 'OutfitHistory',
-  
+  COLLECTIONS: 'Collections',
+
   // Catalog
   CATALOG: 'Catalog',
-  
+
   // Subscription
   UPGRADE: 'Upgrade',
 } as const;
 
 export const TAB_ROUTES = {
+  HOME: 'HomeTab',
   CLOSET: 'ClosetTab',
   OUTFIT: 'OutfitTab',
   PROFILE: 'ProfileTab',
 } as const;
-
-
-
-

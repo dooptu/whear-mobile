@@ -247,3 +247,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+ProfileScreen.displayName = 'ProfileScreen';

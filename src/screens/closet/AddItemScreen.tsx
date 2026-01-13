@@ -407,3 +407,5 @@ const styles = StyleSheet.create({
     marginTop: spacingConstants.xl,
   },
 });
+
+AddItemScreen.displayName = 'AddItemScreen';
