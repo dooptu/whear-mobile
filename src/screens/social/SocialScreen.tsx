@@ -216,6 +216,7 @@ const SocialScreen: React.FC = () => {
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; userName: string } | null>(null);
+  const [wasInPostDetail, setWasInPostDetail] = useState(false); // Track if comment was opened from post detail
   
   // Story viewer state
   const [storyModalVisible, setStoryModalVisible] = useState(false);
@@ -338,8 +339,12 @@ const SocialScreen: React.FC = () => {
     console.log('Report post:', postId);
   }, []);
 
-  const openComments = useCallback((post: Post) => {
+  const openComments = useCallback((post: Post, fromPostDetail: boolean = false) => {
     setSelectedPost(post);
+    setWasInPostDetail(fromPostDetail);
+    if (fromPostDetail) {
+      setPostDetailModalVisible(false);
+    }
     setCommentModalVisible(true);
   }, []);
 
@@ -865,16 +870,29 @@ const SocialScreen: React.FC = () => {
               style={styles.postDetailModalKeyboardView}
             >
               <View style={[styles.postDetailModalContent, { backgroundColor: colors.cardBackground }]}>
-              {/* Header */}
-              <View style={styles.postDetailHeader}>
-                <TouchableOpacity onPress={() => setPostDetailModalVisible(false)}>
-                  <Icon name="close" size={28} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <AppText variant="h2" style={{ fontWeight: '700', color: colors.textPrimary }}>
-                  Post
-                </AppText>
-                <View style={{ width: 28 }} />
-              </View>
+              {/* Header with User Info */}
+              {selectedPostDetail && (
+                <View style={styles.postDetailHeader}>
+                  <View style={styles.postDetailUserInfo}>
+                    <Image
+                      source={{ uri: selectedPostDetail.userAvatar }}
+                      style={styles.postDetailHeaderAvatar}
+                      contentFit="cover"
+                    />
+                    <View>
+                      <AppText variant="body" style={[styles.postDetailHeaderUserName, { color: colors.textPrimary }]}>
+                        {selectedPostDetail.userName}
+                      </AppText>
+                      <AppText variant="caption" style={[styles.postDetailHeaderTime, { color: colors.textSecondary }]}>
+                        {selectedPostDetail.timestamp}
+                      </AppText>
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => setPostDetailModalVisible(false)}>
+                    <Icon name="close" size={28} color={colors.textPrimary} />
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* Post Content */}
               {selectedPostDetail && (
@@ -882,27 +900,6 @@ const SocialScreen: React.FC = () => {
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={styles.postDetailScrollContent}
                 >
-                  {/* Post Header */}
-                  <View style={styles.postDetailPostHeader}>
-                    <View style={styles.postDetailUserInfo}>
-                      <Image
-                        source={{ uri: selectedPostDetail.userAvatar }}
-                        style={styles.postDetailAvatar}
-                        contentFit="cover"
-                      />
-                      <View>
-                        <AppText variant="body" style={[styles.postDetailUserName, { color: colors.textPrimary }]}>
-                          {selectedPostDetail.userName}
-                        </AppText>
-                        <AppText variant="caption" style={[styles.postDetailTime, { color: colors.textSecondary }]}>
-                          {selectedPostDetail.timestamp}
-                        </AppText>
-                      </View>
-                    </View>
-                    <TouchableOpacity onPress={() => handleReport(selectedPostDetail.id)}>
-                      <Icon name="dots-horizontal" size={24} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                  </View>
 
                   {/* Post Image - Larger */}
                   <Image
@@ -937,8 +934,7 @@ const SocialScreen: React.FC = () => {
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => {
-                          setPostDetailModalVisible(false);
-                          openComments(selectedPostDetail);
+                          openComments(selectedPostDetail, true);
                         }}
                         style={styles.postDetailActionButton}
                       >
@@ -973,8 +969,7 @@ const SocialScreen: React.FC = () => {
                     {selectedPostDetail.comments.length > 0 && (
                       <TouchableOpacity
                         onPress={() => {
-                          setPostDetailModalVisible(false);
-                          openComments(selectedPostDetail);
+                          openComments(selectedPostDetail, true);
                         }}
                       >
                         <AppText variant="caption" style={[styles.postDetailViewComments, { color: colors.textSecondary }]}>
@@ -1000,6 +995,12 @@ const SocialScreen: React.FC = () => {
             setCommentModalVisible(false);
             setReplyingTo(null);
             setNewComment('');
+            // If comment was opened from post detail, reopen post detail modal
+            if (wasInPostDetail && selectedPost) {
+              setSelectedPostDetail(selectedPost);
+              setPostDetailModalVisible(true);
+            }
+            setWasInPostDetail(false);
           }}
         >
           <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
@@ -1008,7 +1009,7 @@ const SocialScreen: React.FC = () => {
               style={styles.modalKeyboardView}
             >
               <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
-                <View style={styles.modalHeader}>
+                <View style={[styles.modalHeader, { paddingTop: spacingConstants.lg, paddingHorizontal: spacingConstants.lg }]}>
                   <AppText variant="h1" style={styles.modalTitle}>
                     Comments
                   </AppText>
@@ -1017,6 +1018,12 @@ const SocialScreen: React.FC = () => {
                       setCommentModalVisible(false);
                       setReplyingTo(null);
                       setNewComment('');
+                      // If comment was opened from post detail, reopen post detail modal
+                      if (wasInPostDetail && selectedPost) {
+                        setSelectedPostDetail(selectedPost);
+                        setPostDetailModalVisible(true);
+                      }
+                      setWasInPostDetail(false);
                     }}
                   >
                     <Icon name="close" size={28} color={colors.textPrimary} />
@@ -1028,7 +1035,7 @@ const SocialScreen: React.FC = () => {
                   renderItem={({ item }) => renderComment(item)}
                   keyExtractor={(item) => item.id}
                   style={styles.commentsList}
-                  contentContainerStyle={styles.commentsListContent}
+                  contentContainerStyle={[styles.commentsListContent, { paddingHorizontal: spacingConstants.lg, paddingBottom: spacingConstants.lg }]}
                 />
 
                 {replyingTo && (
@@ -1056,6 +1063,8 @@ const SocialScreen: React.FC = () => {
                     {
                       borderColor: colors.glassBorder,
                       backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                      paddingHorizontal: spacingConstants.lg,
+                      paddingBottom: spacingConstants.lg,
                     },
                   ]}
                 >
@@ -1296,18 +1305,16 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     borderRadius: borderRadiusConstants.xl,
-    paddingTop: spacingConstants.md,
-    paddingBottom: spacingConstants.md,
-    marginHorizontal: spacingConstants.md,
-    marginTop: spacingConstants.md,
-    marginBottom: spacingConstants.md,
+    marginHorizontal: spacingConstants.lg,
+    marginTop: spacingConstants.lg,
+    marginBottom: spacingConstants.lg,
+    maxHeight: '90%',
     overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacingConstants.lg,
     paddingBottom: spacingConstants.md,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
@@ -1319,7 +1326,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commentsListContent: {
-    padding: spacingConstants.lg,
+    paddingTop: spacingConstants.md,
   },
   commentItem: {
     flexDirection: 'row',
@@ -1388,7 +1395,7 @@ const styles = StyleSheet.create({
   commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: spacingConstants.md,
+    paddingTop: spacingConstants.md,
     borderTopWidth: 1,
     gap: 12,
   },
@@ -1512,9 +1519,10 @@ const styles = StyleSheet.create({
   postDetailModalContent: {
     flex: 1,
     borderRadius: borderRadiusConstants.xl,
-    marginHorizontal: spacingConstants.md,
-    marginTop: spacingConstants.md,
-    marginBottom: spacingConstants.md,
+    marginHorizontal: spacingConstants.lg,
+    marginTop: spacingConstants.lg,
+    marginBottom: spacingConstants.lg,
+    maxHeight: '90%',
     overflow: 'hidden',
   },
   postDetailHeader: {
@@ -1522,23 +1530,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacingConstants.lg,
-    paddingVertical: spacingConstants.md,
+    paddingTop: spacingConstants.lg,
+    paddingBottom: spacingConstants.md,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  postDetailHeaderAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: spacingConstants.md,
+  },
+  postDetailHeaderUserName: {
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  postDetailHeaderTime: {
+    fontSize: 13,
+    marginTop: 2,
   },
   postDetailScrollContent: {
     paddingBottom: spacingConstants.xl,
   },
-  postDetailPostHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacingConstants.lg,
-  },
   postDetailUserInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   postDetailAvatar: {
     width: 48,
