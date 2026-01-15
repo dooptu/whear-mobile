@@ -32,6 +32,9 @@ export const ROUTES = {
 
   // Subscription
   UPGRADE: 'Upgrade',
+
+  // Social
+  SOCIAL: 'Social',
 } as const;
 
 export const TAB_ROUTES = {

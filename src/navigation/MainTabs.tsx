@@ -6,7 +6,7 @@ import { BlurView } from 'expo-blur';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { TAB_ROUTES } from '../constants/routes';
 import { MainTabParamList } from './types';
-import { HomeScreen } from '../screens/home/HomeScreen';
+import { WearTodayScreen } from '../screens/home/WearTodayScreen';
 import { ClosetScreen } from '../screens/closet/ClosetScreen';
 import { OutfitGeneratorScreen } from '../screens/outfit/OutfitGeneratorScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -58,7 +58,7 @@ const MainTabs: React.FC = () => {
     >
       <Tab.Screen
         name={TAB_ROUTES.HOME}
-        component={HomeScreen}
+        component={WearTodayScreen}
         options={{
           tabBarIcon: ({ color, size }) => {
             if (!Icon) return null;

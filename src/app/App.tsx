@@ -6,6 +6,14 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
+import { useFonts } from 'expo-font';
+import {
+  Cormorant_300Light,
+  Cormorant_400Regular,
+  Cormorant_500Medium,
+  Cormorant_600SemiBold,
+  Cormorant_700Bold,
+} from '@expo-google-fonts/cormorant';
 import { lightTheme, darkTheme } from '../constants/theme';
 import { AuthStack } from '../navigation/AuthStack';
 import { MainStack } from '../navigation/MainStack';
@@ -19,6 +27,15 @@ const App: React.FC = () => {
   const { themeMode } = useThemeStore();
   const systemColorScheme = useColorScheme();
   const [isReady, setIsReady] = useState(false);
+  
+  // Load fonts
+  const [fontsLoaded] = useFonts({
+    Cormorant_300Light,
+    Cormorant_400Regular,
+    Cormorant_500Medium,
+    Cormorant_600SemiBold,
+    Cormorant_700Bold,
+  });
 
   useEffect(() => {
     // Ensure React Native runtime is ready
@@ -44,8 +61,8 @@ const App: React.FC = () => {
     return themeMode === 'dark' ? darkTheme : lightTheme;
   };
 
-  // Show loading while checking auth or runtime not ready
-  if (isLoading || !isReady) {
+  // Show loading while checking auth, runtime not ready, or fonts not loaded
+  if (isLoading || !isReady || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />

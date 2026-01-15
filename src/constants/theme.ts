@@ -3,7 +3,7 @@ import { MD3LightTheme, MD3DarkTheme, configureFonts } from 'react-native-paper'
 import type { MD3Theme } from 'react-native-paper';
 
 export const brandColors = {
-  // fallback gradient (HomeScreen uses outfit.bgGradient primarily)
+  // fallback gradient (WearTodayScreen uses outfit.bgGradient primarily)
   backgroundGradient: ['#B9B0AC', '#C7C0BD', '#D8D6D3'] as const,
 
   textPrimary: '#111827',
@@ -46,13 +46,48 @@ export const typography: Record<
   'display' | 'h1' | 'h2' | 'h3' | 'body' | 'caption' | 'tiny',
   TextStyle
 > = {
-  display: { fontSize: 32, lineHeight: 38, fontWeight: '700' },
-  h1: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
-  h2: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
-  h3: { fontSize: 16, lineHeight: 22, fontWeight: '700' },
-  body: { fontSize: 16, lineHeight: 22, fontWeight: '500' },
-  caption: { fontSize: 14, lineHeight: 18, fontWeight: '600' },
-  tiny: { fontSize: 12, lineHeight: 16, fontWeight: '500' },
+  display: { 
+    fontSize: 32, 
+    lineHeight: 38, 
+    fontWeight: '700',
+    fontFamily: 'Cormorant_700Bold',
+  },
+  h1: { 
+    fontSize: 22, 
+    lineHeight: 28, 
+    fontWeight: '700',
+    fontFamily: 'Cormorant_700Bold',
+  },
+  h2: { 
+    fontSize: 18, 
+    lineHeight: 24, 
+    fontWeight: '700',
+    fontFamily: 'Cormorant_700Bold',
+  },
+  h3: { 
+    fontSize: 16, 
+    lineHeight: 22, 
+    fontWeight: '700',
+    fontFamily: 'Cormorant_700Bold',
+  },
+  body: { 
+    fontSize: 16, 
+    lineHeight: 22, 
+    fontWeight: '500',
+    fontFamily: 'Cormorant_500Medium',
+  },
+  caption: { 
+    fontSize: 14, 
+    lineHeight: 18, 
+    fontWeight: '600',
+    fontFamily: 'Cormorant_600SemiBold',
+  },
+  tiny: { 
+    fontSize: 12, 
+    lineHeight: 16, 
+    fontWeight: '500',
+    fontFamily: 'Cormorant_500Medium',
+  },
 };
 
 export const spacing = {
@@ -94,9 +129,15 @@ export const blur = {
   strong: 32,
 };
 
-// React Native Paper themes
+// React Native Paper themes with custom font
+const customFontConfig = {
+  fontFamily: 'Cormorant_400Regular',
+  fontWeight: '400' as const,
+};
+
 export const lightTheme: MD3Theme = {
   ...MD3LightTheme,
+  fonts: configureFonts({ config: customFontConfig }),
   colors: {
     ...MD3LightTheme.colors,
     primary: brandColors.accent,
@@ -111,6 +152,7 @@ export const lightTheme: MD3Theme = {
 
 export const darkTheme: MD3Theme = {
   ...MD3DarkTheme,
+  fonts: configureFonts({ config: customFontConfig }),
   colors: {
     ...MD3DarkTheme.colors,
     primary: darkBrandColors.accent,
