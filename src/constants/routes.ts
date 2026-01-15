@@ -26,6 +26,7 @@ export const ROUTES = {
   OUTFIT_DETAIL: 'OutfitDetail',
   OUTFIT_HISTORY: 'OutfitHistory',
   COLLECTIONS: 'Collections',
+  WEAR_TODAY: 'WearToday',
 
   // Catalog
   CATALOG: 'Catalog',

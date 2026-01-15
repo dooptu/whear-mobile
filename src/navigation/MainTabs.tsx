@@ -77,6 +77,7 @@ const MainTabs: React.FC = () => {
             return <Icon name="hanger" size={size || 24} color={color} />;
           },
           tabBarLabel: 'Closet',
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Tab.Screen
@@ -88,6 +89,7 @@ const MainTabs: React.FC = () => {
             return <Icon name="tshirt-crew" size={size || 24} color={color} />;
           },
           tabBarLabel: 'Outfit',
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Tab.Screen
@@ -99,6 +101,7 @@ const MainTabs: React.FC = () => {
             return <Icon name="account" size={size || 24} color={color} />;
           },
           tabBarLabel: 'Profile',
+          tabBarStyle: { display: 'none' },
         }}
       />
     </Tab.Navigator>

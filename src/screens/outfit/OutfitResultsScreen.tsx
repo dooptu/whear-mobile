@@ -64,7 +64,9 @@ export const OutfitResultsScreen: React.FC = () => {
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
-          <AppText variant="display" style={{ fontWeight: '700' }}>Outfit Suggestions</AppText>
+          <AppText variant="display" style={{ fontWeight: '700', color: colors.textPrimary }}>
+            Outfit Suggestions
+          </AppText>
         </View>
 
         <FlatList

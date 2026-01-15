@@ -1,16 +1,21 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Image, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BlurView } from 'expo-blur';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+const Icon = MaterialCommunityIcons;
+
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { AppText, Avatar, LoadingSpinner, TagChip, GradientBackground, AppCard } from '../../components';
+import { AppText, Avatar, LoadingSpinner, TagChip, GradientBackground, AppCard, BottomNavigationBar } from '../../components';
 import { ROUTES } from '../../constants/routes';
 import { MainStackParamList } from '../../navigation/types';
 import { spacing as spacingConstants, borderRadius as borderRadiusConstants } from '../../constants/theme';
 import { useAuthStore } from '../../features/authStore';
 import { useClosetStore } from '../../features/closetStore';
 import { useProfileStore } from '../../features/profileStore';
+import { useThemeStore } from '../../features/themeStore';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -19,13 +24,26 @@ export const ProfileScreen: React.FC = () => {
   const { user } = useAuthStore();
   const { items } = useClosetStore();
   const { profile, isLoading, fetchProfile } = useProfileStore();
-  const { colors, spacing, borderRadius } = useAppTheme();
+  const { colors, spacing, borderRadius, blur, isDark } = useAppTheme();
+  const { themeMode, setThemeMode } = useThemeStore();
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (user) {
       fetchProfile(user.id);
     }
   }, [user]);
+
+  const handleThemeToggle = () => {
+    if (themeMode === 'light') {
+      setThemeMode('dark');
+    } else if (themeMode === 'dark') {
+      setThemeMode('light');
+    } else {
+      // If auto, toggle to opposite of current system
+      setThemeMode(isDark ? 'light' : 'dark');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -43,16 +61,31 @@ export const ProfileScreen: React.FC = () => {
       <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
         <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
-          <AppText variant="display" style={{ fontWeight: '700' }}>{user?.name || 'Profile'}</AppText>
+          <View style={{ width: 46 }} />
+          <AppText variant="display" style={{ fontWeight: '700', color: colors.textPrimary }}>{user?.name || 'Profile'}</AppText>
           <TouchableOpacity
             onPress={() => navigation.navigate(ROUTES.SETTINGS)}
-            style={[styles.headerButton, { backgroundColor: colors.glassSurface }]}
+            style={[styles.headerButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
           >
-            <Text style={[styles.headerIcon, { color: colors.textPrimary }]}>⚙</Text>
+            {Platform.OS === 'ios' ? (
+              <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.headerButtonInner}>
+                <Icon name="cog-outline" size={22} color={colors.textPrimary} />
+              </BlurView>
+            ) : (
+              <View style={[styles.headerButtonInner, { backgroundColor: colors.glassSurface }]}>
+                <Icon name="cog-outline" size={22} color={colors.textPrimary} />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <Animated.ScrollView
+          showsVerticalScrollIndicator={false}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: false,
+          })}
+          scrollEventThrottle={16}
+        >
           {/* Profile Header */}
           <View style={[styles.profileHeader, { paddingHorizontal: spacing.lg, paddingVertical: spacing.xl }]}>
             <Avatar name={user?.name} size={100} />
@@ -64,6 +97,44 @@ export const ProfileScreen: React.FC = () => {
               </View>
             </View>
           </View>
+
+          {/* Theme Toggle Card */}
+          <AppCard variant="glass" style={[styles.themeCard, { marginHorizontal: spacing.lg, marginBottom: spacing.lg }]}>
+            <View style={styles.themeCardContent}>
+              <View style={styles.themeCardLeft}>
+                <Icon name={isDark ? 'weather-night' : 'weather-sunny'} size={24} color={colors.accent} />
+                <View style={styles.themeCardText}>
+                  <AppText variant="body" style={{ fontWeight: '700', marginBottom: 2 }}>
+                    {isDark ? 'Dark Mode' : 'Light Mode'}
+                  </AppText>
+                  <AppText variant="caption" color={colors.textSecondary}>
+                    {themeMode === 'auto' ? 'Auto (System)' : themeMode === 'dark' ? 'Dark' : 'Light'}
+                  </AppText>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={handleThemeToggle}
+                style={[
+                  styles.themeToggle,
+                  {
+                    backgroundColor: isDark ? colors.accent : colors.glassSurface,
+                    borderColor: colors.glassBorder,
+                  },
+                ]}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.themeToggleThumb,
+                    {
+                      backgroundColor: isDark ? '#fff' : colors.accent,
+                      transform: [{ translateX: isDark ? 20 : 0 }],
+                    },
+                  ]}
+                />
+              </TouchableOpacity>
+            </View>
+          </AppCard>
 
           {/* User Info Card */}
           <AppCard variant="glass" style={[styles.userInfoCard, { marginHorizontal: spacing.lg, marginBottom: spacing.lg }]}>
@@ -167,7 +238,10 @@ export const ProfileScreen: React.FC = () => {
               )}
             </View>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
+
+        {/* Bottom Navigation Bar */}
+        <BottomNavigationBar scrollY={scrollY} showOnScrollUp={true} />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -184,14 +258,15 @@ const styles = StyleSheet.create({
     marginBottom: spacingConstants.md,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: borderRadiusConstants.full,
+    width: 46,
+    height: 46,
+    overflow: 'hidden',
+    borderWidth: 1.5,
   },
-  headerIcon: {
-    fontSize: 24,
+  headerButtonInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -204,6 +279,35 @@ const styles = StyleSheet.create({
   },
   statItem: {
     alignItems: 'center',
+  },
+  themeCard: {
+    padding: spacingConstants.lg,
+  },
+  themeCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  themeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingConstants.md,
+  },
+  themeCardText: {
+    flex: 1,
+  },
+  themeToggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  themeToggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   userInfoCard: {
     padding: spacingConstants.lg,
@@ -240,7 +344,6 @@ const styles = StyleSheet.create({
   closetItemImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F5F5F5',
   },
   viewAllButton: {
     paddingVertical: spacingConstants.md,

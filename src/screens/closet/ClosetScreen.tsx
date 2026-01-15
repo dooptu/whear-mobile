@@ -1,18 +1,20 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Image, Text } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, FlatList, TouchableOpacity, Image, Text, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { AppText, LoadingSpinner, EmptyState, TagChip, GradientBackground, StoryChip } from '../../components';
-import { ROUTES } from '../../constants/routes';
-import { MainStackParamList } from '../../navigation/types';
+import { AppText, LoadingSpinner, EmptyState, TagChip, GradientBackground, StoryChip, Avatar, BottomNavigationBar } from '../../components';
+import { ROUTES, TAB_ROUTES } from '../../constants/routes';
+import { MainTabParamList } from '../../navigation/types';
 import { spacing as spacingConstants, borderRadius as borderRadiusConstants } from '../../constants/theme';
 import { useAuthStore } from '../../features/authStore';
 import { useClosetStore } from '../../features/closetStore';
 import { ClosetItem, ItemCategory } from '../../models';
+import { BlurView } from 'expo-blur';
+import { Platform } from 'react-native';
 
-type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
+type NavigationProp = BottomTabNavigationProp<MainTabParamList>;
 
 const categories: ItemCategory[] = ['top', 'bottom', 'dress', 'outerwear', 'shoes', 'accessory', 'bag', 'other'];
 
@@ -20,8 +22,9 @@ export const ClosetScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const { items, isLoading, viewMode, filters, fetchItems, setViewMode, setFilters } = useClosetStore();
-  const { colors, spacing, borderRadius } = useAppTheme();
+  const { colors, spacing, borderRadius, blur, isDark } = useAppTheme();
   const [selectedCategory, setSelectedCategory] = React.useState<ItemCategory | 'all'>('all');
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (user) {
@@ -50,7 +53,12 @@ export const ClosetScreen: React.FC = () => {
             isLarge ? styles.gridItemLarge : styles.gridItemSmall,
             { margin: spacing.sm },
           ]}
-          onPress={() => navigation.navigate(ROUTES.ITEM_DETAIL, { itemId: item.id })}
+          onPress={() => {
+            const parent = navigation.getParent();
+            if (parent) {
+              (parent as any).navigate(ROUTES.ITEM_DETAIL, { itemId: item.id });
+            }
+          }}
           activeOpacity={0.9}
         >
           <Image
@@ -93,7 +101,12 @@ export const ClosetScreen: React.FC = () => {
             marginBottom: spacing.md,
           },
         ]}
-        onPress={() => navigation.navigate(ROUTES.ITEM_DETAIL, { itemId: item.id })}
+        onPress={() => {
+          const parent = navigation.getParent();
+          if (parent) {
+            (parent as any).navigate(ROUTES.ITEM_DETAIL, { itemId: item.id });
+          }
+        }}
         activeOpacity={0.8}
       >
         <Image
@@ -128,21 +141,61 @@ export const ClosetScreen: React.FC = () => {
       <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
         <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
-          <AppText variant="display" style={{ fontWeight: '700' }}>My Closet</AppText>
+          <View style={{ width: 46 }} />
+          <AppText variant="display" style={{ fontWeight: '700', color: colors.textPrimary }}>My Closet</AppText>
           <View style={styles.headerActions}>
             <TouchableOpacity
               onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-              style={styles.headerButton}
+              style={[styles.headerButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
             >
-              <Text style={[styles.headerIcon, { color: colors.textPrimary }]}>
-                {viewMode === 'grid' ? '☰' : '⊞'}
-              </Text>
+              {Platform.OS === 'ios' ? (
+                <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.headerButtonInner}>
+                  <Text style={[styles.headerIcon, { color: colors.textPrimary }]}>
+                    {viewMode === 'grid' ? '☰' : '⊞'}
+                  </Text>
+                </BlurView>
+              ) : (
+                <View style={[styles.headerButtonInner, { backgroundColor: colors.glassSurface }]}>
+                  <Text style={[styles.headerIcon, { color: colors.textPrimary }]}>
+                    {viewMode === 'grid' ? '☰' : '⊞'}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => navigation.navigate(ROUTES.ADD_ITEM)}
-              style={styles.headerButton}
+              onPress={() => {
+                const parent = navigation.getParent();
+                if (parent) {
+                  (parent as any).navigate(ROUTES.ADD_ITEM);
+                }
+              }}
+              style={[styles.headerButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
             >
-              <Text style={[styles.headerIcon, { color: colors.textPrimary }]}>+</Text>
+              {Platform.OS === 'ios' ? (
+                <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.headerButtonInner}>
+                  <Text style={[styles.headerIcon, { color: colors.textPrimary }]}>+</Text>
+                </BlurView>
+              ) : (
+                <View style={[styles.headerButtonInner, { backgroundColor: colors.glassSurface }]}>
+                  <Text style={[styles.headerIcon, { color: colors.textPrimary }]}>+</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate(TAB_ROUTES.PROFILE);
+              }}
+              style={[styles.headerButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
+            >
+              {Platform.OS === 'ios' ? (
+                <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.headerButtonInner}>
+                  <Avatar name={user?.name || 'U'} size={28} />
+                </BlurView>
+              ) : (
+                <View style={[styles.headerButtonInner, { backgroundColor: colors.glassSurface }]}>
+                  <Avatar name={user?.name || 'U'} size={28} />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -180,7 +233,7 @@ export const ClosetScreen: React.FC = () => {
             message="Add items to your closet to get started"
           />
         ) : (
-          <FlatList
+          <Animated.FlatList
             data={filteredItems}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
@@ -188,8 +241,15 @@ export const ClosetScreen: React.FC = () => {
             contentContainerStyle={viewMode === 'grid' ? styles.gridList : styles.listList}
             key={viewMode}
             showsVerticalScrollIndicator={false}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+              useNativeDriver: false,
+            })}
+            scrollEventThrottle={16}
           />
         )}
+
+        {/* Bottom Navigation Bar */}
+        <BottomNavigationBar scrollY={scrollY} showOnScrollUp={true} />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -210,12 +270,15 @@ const styles = StyleSheet.create({
     gap: spacingConstants.md,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+    width: 46,
+    height: 46,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+  },
+  headerButtonInner: {
+    flex: 1,
     alignItems: 'center',
-    borderRadius: borderRadiusConstants.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
   },
   headerIcon: {
     fontSize: 20,
@@ -229,9 +292,11 @@ const styles = StyleSheet.create({
   },
   gridList: {
     padding: spacingConstants.sm,
+    paddingBottom: 100, // Extra padding for bottom navigation bar
   },
   listList: {
     paddingTop: spacingConstants.md,
+    paddingBottom: 100, // Extra padding for bottom navigation bar
   },
   gridItem: {
     overflow: 'hidden',
@@ -247,7 +312,6 @@ const styles = StyleSheet.create({
   gridImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F5F5F5',
   },
   gridOverlay: {
     position: 'absolute',
@@ -280,7 +344,6 @@ const styles = StyleSheet.create({
   listImage: {
     width: 80,
     height: 80,
-    backgroundColor: '#F5F5F5',
   },
   listItemInfo: {
     flex: 1,

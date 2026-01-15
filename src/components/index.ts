@@ -9,6 +9,7 @@ export { EmptyState } from './EmptyState';
 export { GradientBackground } from './GradientBackground';
 export { FrostedBar } from './FrostedBar';
 export { StoryChip } from './StoryChip';
+export { BottomNavigationBar } from './BottomNavigationBar';
 
 
 

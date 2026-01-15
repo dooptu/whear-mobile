@@ -3,8 +3,11 @@ import { MD3LightTheme, MD3DarkTheme, configureFonts } from 'react-native-paper'
 import type { MD3Theme } from 'react-native-paper';
 
 export const brandColors = {
-  // fallback gradient (WearTodayScreen uses outfit.bgGradient primarily)
-  backgroundGradient: ['#B9B0AC', '#C7C0BD', '#D8D6D3'] as const,
+  // Light mode: White as primary background
+  backgroundGradient: ['#FFFFFF', '#F8F9FA', '#FFFFFF'] as const,
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  cardBackground: '#FFFFFF',
 
   textPrimary: '#111827',
   textSecondary: '#6B7280',
@@ -14,18 +17,23 @@ export const brandColors = {
   textOverlayMuted: 'rgba(255,255,255,0.70)',
 
   // glass
-  glassSurface: 'rgba(255,255,255,0.18)',
-  glassBorder: 'rgba(255,255,255,0.18)',
+  glassSurface: 'rgba(255,255,255,0.85)', // More opaque for better contrast
+  glassBorder: 'rgba(0,0,0,0.1)',
 
   // accent
   accent: '#14B8A6', // Teal (stylist/AI vibe)
+  accentLight: 'rgba(20, 184, 166, 0.15)',
   success: '#22C55E',
   warning: '#F59E0B',
   error: '#EF4444',
 };
 
 export const darkBrandColors = {
-  backgroundGradient: ['#0F1014', '#141622', '#0F1014'] as const,
+  // Dark mode: Black but not too dark
+  backgroundGradient: ['#1A1A1A', '#1F1F1F', '#1A1A1A'] as const,
+  background: '#1A1A1A',
+  surface: '#1F1F1F',
+  cardBackground: '#252525', // Slightly lighter than background for contrast
 
   textPrimary: '#E5E7EB',
   textSecondary: 'rgba(229,231,235,0.70)',
@@ -33,10 +41,11 @@ export const darkBrandColors = {
   textOverlay: 'rgba(255,255,255,0.92)',
   textOverlayMuted: 'rgba(255,255,255,0.70)',
 
-  glassSurface: 'rgba(255,255,255,0.10)',
-  glassBorder: 'rgba(255,255,255,0.16)',
+  glassSurface: 'rgba(37,37,37,0.85)', // More opaque for better contrast
+  glassBorder: 'rgba(255,255,255,0.15)',
 
   accent: '#14B8A6',
+  accentLight: 'rgba(20, 184, 166, 0.15)',
   success: '#22C55E',
   warning: '#F59E0B',
   error: '#EF4444',
