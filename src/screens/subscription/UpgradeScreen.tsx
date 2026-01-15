@@ -72,7 +72,10 @@ export const UpgradeScreen: React.FC = () => {
               <AppText variant="h2" style={{ fontWeight: '700', marginBottom: spacing.sm }}>
                 Free Plan
               </AppText>
-              <AppText variant="display" style={{ fontWeight: '700', marginBottom: spacing.md }}>
+              <AppText
+                variant="display"
+                style={{ fontWeight: '700', marginBottom: spacing.md, color: colors.textPrimary }}
+              >
                 $0
               </AppText>
               <View style={styles.features}>
@@ -99,7 +102,10 @@ export const UpgradeScreen: React.FC = () => {
               <AppText variant="h2" style={{ fontWeight: '700', marginBottom: spacing.sm }}>
                 Pro Plan
               </AppText>
-              <AppText variant="display" style={{ fontWeight: '700', marginBottom: spacing.md }}>
+              <AppText
+                variant="display"
+                style={{ fontWeight: '700', marginBottom: spacing.md, color: colors.textPrimary }}
+              >
                 $9.99/mo
               </AppText>
               <View style={styles.features}>

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Switch, Image, TouchableOpacity, Text } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Switch, Image, TouchableOpacity, Text, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Location from 'expo-location';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { AppButton, AppText, AppCard, TagChip, GradientBackground, StoryChip, Avatar } from '../../components';
+import { AppButton, AppText, AppCard, TagChip, GradientBackground, StoryChip, Avatar, BottomNavigationBar } from '../../components';
 import { ROUTES, TAB_ROUTES } from '../../constants/routes';
 import { MainStackParamList } from '../../navigation/types';
 import { spacing as spacingConstants, borderRadius as borderRadiusConstants } from '../../constants/theme';
@@ -18,7 +18,7 @@ import { Occasion, WeatherContext } from '../../models';
 import { BlurView } from 'expo-blur';
 import { Platform } from 'react-native';
 
-type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
+type NavigationProp = BottomTabNavigationProp<MainTabParamList>;
 
 const occasions: Occasion[] = ['work', 'casual', 'date', 'party', 'sport'];
 
@@ -29,7 +29,7 @@ export const OutfitGeneratorScreen: React.FC = () => {
   const { generateOutfits, isLoading, generatedOutfits, history } = useOutfitStore();
   const { checkGenerateLimit, incrementGenerateCount } = useEntitlementsStore();
   const { showSnackbar } = useSnackbar();
-  const { colors, spacing, borderRadius, blur } = useAppTheme();
+  const { colors, spacing, borderRadius, blur, isDark } = useAppTheme();
 
   const [occasion, setOccasion] = useState<Occasion>('casual');
   const [temperature, setTemperature] = useState<string>('22');
@@ -77,7 +77,10 @@ export const OutfitGeneratorScreen: React.FC = () => {
 
       await generateOutfits(user.id, occasion, weather, items);
       await incrementGenerateCount(user.id);
-      navigation.navigate(ROUTES.OUTFIT_RESULTS);
+      const parent = navigation.getParent();
+      if (parent) {
+        (parent as any).navigate(ROUTES.OUTFIT_RESULTS);
+      }
     } catch (error) {
       showSnackbar((error as Error).message, 'error');
     }
@@ -89,24 +92,28 @@ export const OutfitGeneratorScreen: React.FC = () => {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <ScrollView
+        <Animated.ScrollView
           contentContainerStyle={[styles.scrollContent, { paddingHorizontal: spacing.lg }]}
           showsVerticalScrollIndicator={false}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: false,
+          })}
+          scrollEventThrottle={16}
         >
           {/* Header */}
           <View style={styles.header}>
             <View style={{ width: 46 }} />
-            <AppText variant="display" style={{ fontWeight: '700' }}>
+            <AppText variant="display" style={{ fontWeight: '700', color: colors.textPrimary }}>
               Today
             </AppText>
             <TouchableOpacity
               onPress={() => {
-                navigation.getParent()?.navigate('MainTabs', { screen: TAB_ROUTES.PROFILE });
+                navigation.navigate(TAB_ROUTES.PROFILE);
               }}
               style={[styles.headerButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
             >
               {Platform.OS === 'ios' ? (
-                <BlurView intensity={blur.medium} tint="light" style={styles.headerButtonInner}>
+                <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.headerButtonInner}>
                   <Avatar name={user?.name || 'U'} size={28} />
                 </BlurView>
               ) : (
@@ -137,7 +144,12 @@ export const OutfitGeneratorScreen: React.FC = () => {
                     <AppButton
                       label="Wear Today"
                       variant="glass"
-                      onPress={() => navigation.navigate(ROUTES.OUTFIT_DETAIL, { outfitId: todayOutfit.id })}
+                      onPress={() => {
+                        const parent = navigation.getParent();
+                        if (parent) {
+                          (parent as any).navigate(ROUTES.OUTFIT_DETAIL, { outfitId: todayOutfit.id });
+                        }
+                      }}
                       style={styles.heroButton}
                     />
                   </View>
@@ -195,7 +207,7 @@ export const OutfitGeneratorScreen: React.FC = () => {
                   value={isRaining}
                   onValueChange={setIsRaining}
                   trackColor={{ false: colors.glassBorder, true: colors.accent }}
-                  thumbColor="#FFFFFF"
+                  thumbColor={colors.textPrimary}
                 />
               </View>
 
@@ -214,7 +226,10 @@ export const OutfitGeneratorScreen: React.FC = () => {
               style={styles.generateButton}
             />
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
+
+        {/* Bottom Navigation Bar */}
+        <BottomNavigationBar scrollY={scrollY} showOnScrollUp={true} />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -226,6 +241,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingVertical: spacingConstants.xl,
+    paddingBottom: 100, // Extra padding for bottom navigation bar
   },
   header: {
     flexDirection: 'row',

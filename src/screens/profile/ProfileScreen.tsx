@@ -62,13 +62,13 @@ export const ProfileScreen: React.FC = () => {
         {/* Header */}
         <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.lg }]}>
           <View style={{ width: 46 }} />
-          <AppText variant="display" style={{ fontWeight: '700' }}>{user?.name || 'Profile'}</AppText>
+          <AppText variant="display" style={{ fontWeight: '700', color: colors.textPrimary }}>{user?.name || 'Profile'}</AppText>
           <TouchableOpacity
             onPress={() => navigation.navigate(ROUTES.SETTINGS)}
             style={[styles.headerButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
           >
             {Platform.OS === 'ios' ? (
-              <BlurView intensity={blur.medium} tint="light" style={styles.headerButtonInner}>
+              <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.headerButtonInner}>
                 <Icon name="cog-outline" size={22} color={colors.textPrimary} />
               </BlurView>
             ) : (
@@ -344,7 +344,6 @@ const styles = StyleSheet.create({
   closetItemImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F5F5F5',
   },
   viewAllButton: {
     paddingVertical: spacingConstants.md,

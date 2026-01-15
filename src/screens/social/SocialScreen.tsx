@@ -206,7 +206,7 @@ const mockPosts: Post[] = [
 
 const SocialScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { colors, spacing, borderRadius, blur } = useAppTheme();
+  const { colors, spacing, borderRadius, blur, isDark } = useAppTheme();
   const { user } = useAuthStore();
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -359,23 +359,26 @@ const SocialScreen: React.FC = () => {
           cachePolicy="memory-disk"
         />
         <View style={styles.commentContent}>
-          <View style={styles.commentBubble}>
-            <AppText variant="body" style={styles.commentUserName}>
+          <View style={[
+            styles.commentBubble,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }
+          ]}>
+            <AppText variant="body" style={[styles.commentUserName, { color: colors.textPrimary }]}>
               {comment.userName}
             </AppText>
-            <AppText variant="body" style={styles.commentText}>
+            <AppText variant="body" style={[styles.commentText, { color: colors.textPrimary }]}>
               {comment.text}
             </AppText>
           </View>
           <View style={styles.commentActions}>
-            <AppText variant="caption" style={styles.commentTime}>
+            <AppText variant="caption" style={[styles.commentTime, { color: colors.textSecondary }]}>
               {comment.timestamp}
             </AppText>
             <TouchableOpacity
               onPress={() => selectedPost && handleLikeComment(selectedPost.id, comment.id)}
               style={styles.commentActionButton}
             >
-              <AppText variant="caption" style={styles.commentActionText}>
+              <AppText variant="caption" style={[styles.commentActionText, { color: colors.textSecondary }]}>
                 Like
               </AppText>
             </TouchableOpacity>
@@ -384,13 +387,13 @@ const SocialScreen: React.FC = () => {
                 onPress={() => setReplyingTo({ commentId: comment.id, userName: comment.userName })}
                 style={styles.commentActionButton}
               >
-                <AppText variant="caption" style={styles.commentActionText}>
+                <AppText variant="caption" style={[styles.commentActionText, { color: colors.textSecondary }]}>
                   Reply
                 </AppText>
               </TouchableOpacity>
             )}
             {comment.likes > 0 && (
-              <AppText variant="caption" style={styles.commentLikes}>
+              <AppText variant="caption" style={[styles.commentLikes, { color: colors.textSecondary }]}>
                 {comment.likes} {comment.likes === 1 ? 'like' : 'likes'}
               </AppText>
             )}
@@ -403,12 +406,20 @@ const SocialScreen: React.FC = () => {
         </View>
       </View>
     ),
-    [selectedPost, handleLikeComment]
+    [selectedPost, handleLikeComment, colors, isDark]
   );
 
   const renderPost = useCallback(
     ({ item }: { item: Post }) => (
-      <View style={[styles.postCard, { borderRadius: borderRadius.lg }]}>
+      <View style={[
+        styles.postCard,
+        {
+          borderRadius: borderRadius.lg,
+          backgroundColor: colors.cardBackground,
+          shadowColor: isDark ? '#000' : '#000',
+          shadowOpacity: isDark ? 0.3 : 0.1,
+        }
+      ]}>
         {/* Post Header */}
         <View style={styles.postHeader}>
           <View style={styles.postUserInfo}>
@@ -419,10 +430,10 @@ const SocialScreen: React.FC = () => {
               cachePolicy="memory-disk"
             />
             <View>
-              <AppText variant="body" style={styles.postUserName}>
+              <AppText variant="body" style={[styles.postUserName, { color: colors.textPrimary }]}>
                 {item.userName}
               </AppText>
-              <AppText variant="caption" style={styles.postTime}>
+              <AppText variant="caption" style={[styles.postTime, { color: colors.textSecondary }]}>
                 {item.timestamp}
               </AppText>
             </View>
@@ -464,21 +475,21 @@ const SocialScreen: React.FC = () => {
 
         {/* Post Caption */}
         <View style={styles.postCaption}>
-          <AppText variant="body" style={styles.postLikes}>
+          <AppText variant="body" style={[styles.postLikes, { color: colors.textPrimary }]}>
             {item.likes} {item.likes === 1 ? 'like' : 'likes'}
           </AppText>
           <View style={styles.postCaptionText}>
-            <AppText variant="body" style={styles.postCaptionUser}>
+            <AppText variant="body" style={[styles.postCaptionUser, { color: colors.textPrimary }]}>
               {item.userName}
             </AppText>
-            <AppText variant="body" style={styles.postCaptionContent}>
+            <AppText variant="body" style={[styles.postCaptionContent, { color: colors.textPrimary }]}>
               {' '}
               {item.caption}
             </AppText>
           </View>
           {item.comments.length > 0 && (
             <TouchableOpacity onPress={() => openComments(item)}>
-              <AppText variant="caption" style={styles.viewComments}>
+              <AppText variant="caption" style={[styles.viewComments, { color: colors.textSecondary }]}>
                 View all {item.comments.length} {item.comments.length === 1 ? 'comment' : 'comments'}
               </AppText>
             </TouchableOpacity>
@@ -486,7 +497,7 @@ const SocialScreen: React.FC = () => {
         </View>
       </View>
     ),
-    [colors, borderRadius, handleLikePost, handleShare, handleReport, openComments]
+    [colors, borderRadius, isDark, handleLikePost, handleShare, handleReport, openComments]
   );
 
   return (
@@ -500,13 +511,13 @@ const SocialScreen: React.FC = () => {
           </AppText>
           <TouchableOpacity
             onPress={() => {
-              // Navigate to Profile tab
-              navigation.getParent()?.navigate('MainTabs', { screen: TAB_ROUTES.PROFILE });
+              // Navigate to Profile tab inside MainTabs
+              navigation.navigate(ROUTES.MAIN_TABS, { screen: TAB_ROUTES.PROFILE });
             }}
             style={[styles.headerButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
           >
             {Platform.OS === 'ios' ? (
-              <BlurView intensity={blur.medium} tint="light" style={styles.headerButtonInner}>
+              <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.headerButtonInner}>
                 <Avatar name={user?.name || 'U'} size={28} />
               </BlurView>
             ) : (
@@ -540,9 +551,16 @@ const SocialScreen: React.FC = () => {
 
           {/* Post Creation Area */}
           <View style={[styles.createPostSection, { paddingHorizontal: spacing.lg, marginBottom: spacing.lg }]}>
-            <View style={[styles.createPostCard, { borderRadius: borderRadius.lg, borderColor: colors.glassBorder }]}>
+            <View style={[
+              styles.createPostCard,
+              {
+                borderRadius: borderRadius.lg,
+                borderColor: colors.glassBorder,
+                backgroundColor: colors.cardBackground,
+              }
+            ]}>
               {Platform.OS === 'ios' ? (
-                <BlurView intensity={blur.medium} tint="light" style={styles.createPostInner}>
+                <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.createPostInner}>
                   <TouchableOpacity
                     activeOpacity={0.8}
                     style={styles.createPostButton}
@@ -636,7 +654,7 @@ const SocialScreen: React.FC = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.modalContainer}
           >
-            <View style={[styles.modalContent, { backgroundColor: '#FFFFFF' }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
               <View style={styles.modalHeader}>
                 <AppText variant="h1" style={styles.modalTitle}>
                   Comments
@@ -661,19 +679,34 @@ const SocialScreen: React.FC = () => {
               />
 
               {replyingTo && (
-                <View style={styles.replyingTo}>
-                  <AppText variant="caption" style={styles.replyingToText}>
+                <View style={[
+                  styles.replyingTo,
+                  { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }
+                ]}>
+                  <AppText variant="caption" style={[styles.replyingToText, { color: colors.textSecondary }]}>
                     Replying to {replyingTo.userName}
                   </AppText>
                   <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                    <Icon name="close" size={18} color={colors.textPrimary} />
+                    <Icon name="close" size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
               )}
 
-              <View style={[styles.commentInputContainer, { borderColor: colors.glassBorder }]}>
+              <View style={[
+                styles.commentInputContainer,
+                {
+                  borderColor: colors.glassBorder,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                }
+              ]}>
                 <TextInput
-                  style={[styles.commentInput, { color: colors.textPrimary }]}
+                  style={[
+                    styles.commentInput,
+                    {
+                      color: colors.textPrimary,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                    }
+                  ]}
                   placeholder="Add a comment..."
                   placeholderTextColor={colors.textSecondary}
                   value={newComment}
@@ -825,10 +858,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   postCard: {
-    backgroundColor: '#fff',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
@@ -853,13 +883,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   postTime: {
-    opacity: 0.6,
     fontSize: 12,
   },
   postImage: {
     width: '100%',
     height: SCREEN_WIDTH,
-    backgroundColor: '#f0f0f0',
   },
   postActions: {
     flexDirection: 'row',
@@ -895,7 +923,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   viewComments: {
-    opacity: 0.6,
     marginTop: 4,
   },
   modalContainer: {
@@ -944,7 +971,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commentBubble: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
     borderRadius: 16,
     padding: spacingConstants.sm,
     marginBottom: 4,
@@ -987,7 +1013,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacingConstants.lg,
     paddingVertical: spacingConstants.sm,
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   replyingToText: {
     opacity: 0.7,
@@ -1004,7 +1029,6 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     padding: spacingConstants.sm,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.05)',
     fontSize: 14,
   },
   commentSendButton: {

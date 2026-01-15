@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions, Platform, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,7 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 const Icon = MaterialCommunityIcons;
 
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { AppText } from '../../components/AppText';
+import { AppText, BottomNavigationBar } from '../../components';
 import { GradientBackground } from '../../components';
 import { MainStackParamList } from '../../navigation/types';
 import { ROUTES } from '../../constants/routes';
@@ -24,9 +24,10 @@ type TabType = 'accepted' | 'rejected';
 
 export const CollectionsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { colors, spacing, borderRadius, blur } = useAppTheme();
+  const { colors, spacing, borderRadius, blur, isDark } = useAppTheme();
   const { accepted, rejected } = useTodayCollectionStore();
   const [activeTab, setActiveTab] = useState<TabType>('accepted');
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const currentItems = activeTab === 'accepted' ? accepted : rejected;
 
@@ -34,7 +35,15 @@ export const CollectionsScreen: React.FC = () => {
     return (
       <TouchableOpacity
         activeOpacity={0.9}
-        style={[styles.card, { borderRadius: borderRadius.xl }]}
+        style={[
+          styles.card,
+          {
+            borderRadius: borderRadius.xl,
+            backgroundColor: colors.cardBackground,
+            shadowColor: isDark ? '#000' : '#000',
+            shadowOpacity: isDark ? 0.4 : 0.2,
+          }
+        ]}
       >
         <Image
           source={{ uri: item.imageUri }}
@@ -61,8 +70,11 @@ export const CollectionsScreen: React.FC = () => {
           </AppText>
         </View>
         {activeTab === 'accepted' && (
-          <View style={styles.badge}>
-            <Icon name="check-circle" size={24} color={colors.success} />
+          <View style={[
+            styles.badge,
+            { backgroundColor: isDark ? 'rgba(34,197,94,0.95)' : 'rgba(255,255,255,0.95)' }
+          ]}>
+            <Icon name="check-circle" size={24} color={isDark ? '#fff' : colors.success} />
           </View>
         )}
         {activeTab === 'rejected' && (
@@ -84,16 +96,16 @@ export const CollectionsScreen: React.FC = () => {
             style={[styles.backButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
           >
             {Platform.OS === 'ios' ? (
-              <BlurView intensity={blur.medium} tint="light" style={styles.backButtonInner}>
-                <Icon name="arrow-left" size={22} color="rgba(255,255,255,0.95)" />
+              <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.backButtonInner}>
+                <Icon name="arrow-left" size={22} color={colors.textPrimary} />
               </BlurView>
             ) : (
-              <View style={[styles.backButtonInner, styles.backButtonAndroid]}>
-                <Icon name="arrow-left" size={22} color="rgba(255,255,255,0.95)" />
+              <View style={[styles.backButtonInner, { backgroundColor: colors.glassSurface }]}>
+                <Icon name="arrow-left" size={22} color={colors.textPrimary} />
               </View>
             )}
           </TouchableOpacity>
-          <AppText overlay variant="display" style={styles.headerTitle}>
+          <AppText variant="display" style={[styles.headerTitle, { color: colors.textPrimary }]}>
             Collections
           </AppText>
           <TouchableOpacity
@@ -101,12 +113,12 @@ export const CollectionsScreen: React.FC = () => {
             style={[styles.backButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
           >
             {Platform.OS === 'ios' ? (
-              <BlurView intensity={blur.medium} tint="light" style={styles.backButtonInner}>
-                <Icon name="home" size={22} color="rgba(255,255,255,0.95)" />
+              <BlurView intensity={blur.medium} tint={isDark ? 'dark' : 'light'} style={styles.backButtonInner}>
+                <Icon name="home" size={22} color={colors.textPrimary} />
               </BlurView>
             ) : (
-              <View style={[styles.backButtonInner, styles.backButtonAndroid]}>
-                <Icon name="home" size={22} color="rgba(255,255,255,0.95)" />
+              <View style={[styles.backButtonInner, { backgroundColor: colors.glassSurface }]}>
+                <Icon name="home" size={22} color={colors.textPrimary} />
               </View>
             )}
           </TouchableOpacity>
@@ -119,19 +131,39 @@ export const CollectionsScreen: React.FC = () => {
             onPress={() => setActiveTab('accepted')}
             style={[
               styles.tab,
-              { borderColor: colors.glassBorder, borderRadius: borderRadius.full },
-              activeTab === 'accepted' && styles.tabActive,
+              {
+                borderColor: activeTab === 'accepted' ? colors.accent : colors.glassBorder,
+                borderRadius: borderRadius.full,
+                backgroundColor: activeTab === 'accepted' ? colors.accent + '20' : 'transparent',
+              },
+              activeTab === 'accepted' && { borderWidth: 2 },
             ]}
           >
             {Platform.OS === 'ios' ? (
-              <BlurView intensity={blur.medium} tint="light" style={styles.tabInner}>
-                <AppText overlay variant="body" style={styles.tabText}>
+              <BlurView
+                intensity={blur.medium}
+                tint={isDark ? 'dark' : 'light'}
+                style={styles.tabInner}
+              >
+                <AppText
+                  variant="body"
+                  style={[
+                    styles.tabText,
+                    { color: activeTab === 'accepted' ? colors.accent : colors.textPrimary }
+                  ]}
+                >
                   Liked ({accepted.length})
                 </AppText>
               </BlurView>
             ) : (
-              <View style={[styles.tabInner, styles.tabAndroid]}>
-                <AppText overlay variant="body" style={styles.tabText}>
+              <View style={[styles.tabInner, { backgroundColor: colors.glassSurface }]}>
+                <AppText
+                  variant="body"
+                  style={[
+                    styles.tabText,
+                    { color: activeTab === 'accepted' ? colors.accent : colors.textPrimary }
+                  ]}
+                >
                   Liked ({accepted.length})
                 </AppText>
               </View>
@@ -143,19 +175,39 @@ export const CollectionsScreen: React.FC = () => {
             onPress={() => setActiveTab('rejected')}
             style={[
               styles.tab,
-              { borderColor: colors.glassBorder, borderRadius: borderRadius.full },
-              activeTab === 'rejected' && styles.tabActive,
+              {
+                borderColor: activeTab === 'rejected' ? colors.error : colors.glassBorder,
+                borderRadius: borderRadius.full,
+                backgroundColor: activeTab === 'rejected' ? colors.error + '20' : 'transparent',
+              },
+              activeTab === 'rejected' && { borderWidth: 2 },
             ]}
           >
             {Platform.OS === 'ios' ? (
-              <BlurView intensity={blur.medium} tint="light" style={styles.tabInner}>
-                <AppText overlay variant="body" style={styles.tabText}>
+              <BlurView
+                intensity={blur.medium}
+                tint={isDark ? 'dark' : 'light'}
+                style={styles.tabInner}
+              >
+                <AppText
+                  variant="body"
+                  style={[
+                    styles.tabText,
+                    { color: activeTab === 'rejected' ? colors.error : colors.textPrimary }
+                  ]}
+                >
                   Not Liked ({rejected.length})
                 </AppText>
               </BlurView>
             ) : (
-              <View style={[styles.tabInner, styles.tabAndroid]}>
-                <AppText overlay variant="body" style={styles.tabText}>
+              <View style={[styles.tabInner, { backgroundColor: colors.glassSurface }]}>
+                <AppText
+                  variant="body"
+                  style={[
+                    styles.tabText,
+                    { color: activeTab === 'rejected' ? colors.error : colors.textPrimary }
+                  ]}
+                >
                   Not Liked ({rejected.length})
                 </AppText>
               </View>
@@ -171,7 +223,7 @@ export const CollectionsScreen: React.FC = () => {
               size={64}
               color={colors.textSecondary}
             />
-            <AppText variant="h1" style={[styles.emptyTitle, { marginTop: spacing.lg }]}>
+            <AppText variant="h1" style={[styles.emptyTitle, { marginTop: spacing.lg, color: colors.textPrimary }]}>
               No {activeTab === 'accepted' ? 'Liked' : 'Rejected'} Outfits
             </AppText>
             <AppText variant="body" color={colors.textSecondary} style={styles.emptySubtitle}>
@@ -181,7 +233,7 @@ export const CollectionsScreen: React.FC = () => {
             </AppText>
           </View>
         ) : (
-          <FlatList
+          <Animated.FlatList
             data={currentItems}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
@@ -189,8 +241,15 @@ export const CollectionsScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
             numColumns={2}
             columnWrapperStyle={styles.row}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+              useNativeDriver: false,
+            })}
+            scrollEventThrottle={16}
           />
         )}
+
+        {/* Bottom Navigation Bar */}
+        <BottomNavigationBar scrollY={scrollY} showOnScrollUp={true} />
       </SafeAreaView>
     </GradientBackground>
   );
@@ -217,9 +276,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backButtonAndroid: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
   headerTitle: {
     fontWeight: '900',
     fontSize: 32,
@@ -235,24 +291,18 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     overflow: 'hidden',
   },
-  tabActive: {
-    borderWidth: 2,
-  },
   tabInner: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabAndroid: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
   tabText: {
     fontWeight: '800',
     fontSize: 15,
   },
   list: {
-    paddingBottom: 40,
+    paddingBottom: 100, // Extra padding for bottom navigation bar
   },
   row: {
     justifyContent: 'space-between',
@@ -262,9 +312,6 @@ const styles = StyleSheet.create({
     width: (SCREEN_WIDTH - 48 - 16) / 2,
     height: 280,
     overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
@@ -311,7 +358,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.95)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

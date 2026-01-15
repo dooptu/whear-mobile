@@ -14,18 +14,13 @@ export const GradientBackground: React.FC<GradientBackgroundProps> = ({
   style,
   colors: customColors,
 }) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const gradientColors = customColors || colors.backgroundGradient;
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.container, style]}
-    >
+    <View style={[styles.container, { backgroundColor: isDark ? colors.background : colors.background }, style]}>
       {children}
-    </LinearGradient>
+    </View>
   );
 };
 

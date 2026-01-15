@@ -34,7 +34,7 @@ export const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({
 }) => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { colors, borderRadius, blur } = useAppTheme();
+  const { colors, borderRadius, blur, isDark } = useAppTheme();
   const translateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
 
@@ -70,26 +70,46 @@ export const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({
   }, [scrollY, showOnScrollUp, translateY]);
 
   const isActive = (routeName: string) => {
+    const currentRoute = route.name;
+    
     if (routeName === 'MainTabs') {
-      // Check if we're in MainTabs and on HOME tab
-      const parentState = navigation.getState();
-      const mainTabsState = parentState?.routes.find(r => r.name === 'MainTabs');
-      if (mainTabsState && 'state' in mainTabsState) {
-        const tabsState = mainTabsState.state as any;
-        return tabsState?.routes?.[tabsState?.index]?.name === 'HomeTab';
-      }
-      return false;
+      // Only active if we're specifically on HomeTab
+      // When inside MainTabs, route.name will be the tab name (HomeTab, ClosetTab, etc.)
+      return currentRoute === 'HomeTab';
     }
-    return route.name === routeName;
+    
+    // For Social and Collections routes, check exact match
+    // These are direct routes in MainStack
+    if (routeName === ROUTES.SOCIAL) {
+      return currentRoute === 'Social';
+    }
+    
+    if (routeName === ROUTES.COLLECTIONS) {
+      return currentRoute === 'Collections';
+    }
+    
+    return false;
   };
 
   const handleNavigate = (routeName: string) => {
-    if (route.name !== routeName) {
-      if (routeName === 'MainTabs') {
-        // Navigate to MainTabs and then to HOME tab
-        navigation.getParent()?.navigate('MainTabs', { screen: 'HomeTab' });
+    if (routeName === 'MainTabs') {
+      // Navigate to MainTabs and then to HOME tab
+      const parent = navigation.getParent();
+      if (parent) {
+        (parent as any).navigate('MainTabs', { screen: 'HomeTab' });
       } else {
-        navigation.navigate(routeName as never);
+        (navigation as any).navigate('MainTabs', { screen: 'HomeTab' });
+      }
+    } else {
+      // For other routes, try to navigate directly
+      try {
+        (navigation as any).navigate(routeName);
+      } catch (error) {
+        // If direct navigation fails, try parent navigation
+        const parent = navigation.getParent();
+        if (parent) {
+          (parent as any).navigate(routeName);
+        }
       }
     }
   };
@@ -100,93 +120,114 @@ export const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({
         styles.container,
         {
           transform: [{ translateY }],
-          borderTopColor: colors.glassBorder,
         },
       ]}
     >
-      {Platform.OS === 'ios' ? (
-        <BlurView intensity={blur.medium} tint="light" style={styles.blurContainer}>
-          <View style={styles.navContent}>
-            {navItems.map((item) => {
-              const active = isActive(item.route);
-              return (
-                <TouchableOpacity
-                  key={item.route}
-                  activeOpacity={0.7}
-                  onPress={() => handleNavigate(item.route)}
-                  style={styles.navItem}
-                >
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      active && {
-                        backgroundColor: colors.accent + '20',
-                        borderRadius: borderRadius.full,
-                      },
-                    ]}
+      <View style={styles.pillContainer}>
+        {Platform.OS === 'ios' ? (
+          <BlurView
+            intensity={blur.strong}
+            tint={isDark ? 'dark' : 'light'}
+            style={[
+              styles.pillBlur,
+              {
+                borderRadius: borderRadius.full,
+                backgroundColor: isDark ? 'rgba(37,37,37,0.9)' : 'rgba(255,255,255,0.9)',
+              },
+            ]}
+          >
+            <View style={styles.navContent}>
+              {navItems.map((item) => {
+                const active = isActive(item.route);
+                return (
+                  <TouchableOpacity
+                    key={item.route}
+                    activeOpacity={0.7}
+                    onPress={() => handleNavigate(item.route)}
+                    style={styles.navItem}
                   >
-                    <Icon
-                      name={item.icon}
-                      size={24}
-                      color={active ? colors.accent : colors.textSecondary}
-                    />
-                  </View>
-                  <View style={[styles.labelContainer, active && { opacity: 1 }]}>
                     <View
                       style={[
-                        styles.activeIndicator,
-                        { backgroundColor: colors.accent },
-                        active && styles.activeIndicatorVisible,
+                        styles.iconContainer,
+                        active && {
+                          backgroundColor: colors.accent + '20',
+                          borderRadius: borderRadius.full,
+                        },
                       ]}
-                    />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </BlurView>
-      ) : (
-        <View style={[styles.blurContainer, { backgroundColor: colors.glassSurface }]}>
-          <View style={styles.navContent}>
-            {navItems.map((item) => {
-              const active = isActive(item.route);
-              return (
-                <TouchableOpacity
-                  key={item.route}
-                  activeOpacity={0.7}
-                  onPress={() => handleNavigate(item.route)}
-                  style={styles.navItem}
-                >
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      active && {
-                        backgroundColor: colors.accent + '20',
-                        borderRadius: borderRadius.full,
-                      },
-                    ]}
+                    >
+                      <Icon
+                        name={item.icon}
+                        size={24}
+                        color={active ? colors.accent : colors.textSecondary}
+                      />
+                    </View>
+                    <View style={[styles.labelContainer, active && { opacity: 1 }]}>
+                      <View
+                        style={[
+                          styles.activeIndicator,
+                          { backgroundColor: colors.accent },
+                          active && styles.activeIndicatorVisible,
+                        ]}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </BlurView>
+        ) : (
+          <View
+            style={[
+              styles.pillBlur,
+              {
+                borderRadius: borderRadius.full,
+                backgroundColor: isDark ? 'rgba(37,37,37,0.95)' : 'rgba(255,255,255,0.95)',
+                borderWidth: 1,
+                borderColor: colors.glassBorder,
+              },
+            ]}
+          >
+            <View style={styles.navContent}>
+              {navItems.map((item) => {
+                const active = isActive(item.route);
+                return (
+                  <TouchableOpacity
+                    key={item.route}
+                    activeOpacity={0.7}
+                    onPress={() => handleNavigate(item.route)}
+                    style={styles.navItem}
                   >
-                    <Icon
-                      name={item.icon}
-                      size={24}
-                      color={active ? colors.accent : colors.textSecondary}
-                    />
-                  </View>
-                  <View style={[styles.labelContainer, active && { opacity: 1 }]}>
                     <View
                       style={[
-                        styles.activeIndicator,
-                        { backgroundColor: colors.accent },
-                        active && styles.activeIndicatorVisible,
+                        styles.iconContainer,
+                        active && {
+                          backgroundColor: colors.accent + '20',
+                          borderRadius: borderRadius.full,
+                        },
                       ]}
-                    />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                    >
+                      <Icon
+                        name={item.icon}
+                        size={24}
+                        color={active ? colors.accent : colors.textSecondary}
+                      />
+                    </View>
+                    <View style={[styles.labelContainer, active && { opacity: 1 }]}>
+                      <View
+                        style={[
+                          styles.activeIndicator,
+                          { backgroundColor: colors.accent },
+                          active && styles.activeIndicatorVisible,
+                        ]}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
-      )}
+        )}
+      </View>
     </Animated.View>
   );
 };
@@ -197,13 +238,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopWidth: 1,
     zIndex: 1000,
-  },
-  blurContainer: {
-    width: '100%',
+    alignItems: 'center',
     paddingBottom: Platform.OS === 'ios' ? 20 : 16,
     paddingTop: spacingConstants.md,
+  },
+  pillContainer: {
+    width: SCREEN_WIDTH - 32, // Leave 16px padding on each side
+    alignItems: 'center',
+  },
+  pillBlur: {
+    width: '100%',
+    paddingVertical: spacingConstants.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
   navContent: {
     flexDirection: 'row',
