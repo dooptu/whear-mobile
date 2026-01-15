@@ -1298,9 +1298,11 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
   modalKeyboardView: {
     flex: 1,
+    justifyContent: 'flex-end',
   },
   modalContent: {
     flex: 1,
@@ -1512,9 +1514,11 @@ const styles = StyleSheet.create({
   postDetailModalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
   postDetailModalKeyboardView: {
     flex: 1,
+    justifyContent: 'flex-end',
   },
   postDetailModalContent: {
     flex: 1,
