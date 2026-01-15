@@ -6,7 +6,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+const Icon = MaterialCommunityIcons;
 
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { AppText } from '../../components/AppText';
@@ -419,12 +420,47 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={bg}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Background Image with blurred overlay */}
+      {active?.imageUri && (
+        <>
+          <Image
+            source={{ uri: active.imageUri }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={300}
+          />
+          {/* Blur effect for background */}
+          {Platform.OS === 'ios' ? (
+            <BlurView
+              intensity={24}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
+          ) : (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: 'rgba(0,0,0,0.12)' },
+              ]}
+            />
+          )}
+          {/* Original gradient overlay (reverted darkness) */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']}
+            start={{ x: 0.15, y: 0 }}
+            end={{ x: 0.85, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </>
+      )}
+      {!active?.imageUri && (
+        <LinearGradient
+          colors={bg}
+          start={{ x: 0.15, y: 0 }}
+          end={{ x: 0.85, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
 
       {/* Neon Zones - Rendered at screen level, above all cards - Full height, sát mép màn hình */}
       {/* Neon Green Zone (Right - Like) - Ellipse from right edge - Full height, highest zIndex */}

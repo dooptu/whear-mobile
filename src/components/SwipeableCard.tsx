@@ -11,7 +11,8 @@ import {
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+const Icon = MaterialCommunityIcons;
 
 import { useAppTheme } from '../hooks/useAppTheme';
 import { AppText } from './AppText';
@@ -270,6 +271,10 @@ export const SwipeableCard = memo(function SwipeableCard({
             useNativeDriver: true,
           }),
         ]).start(() => {
+          // Reset neon zone opacity in parent when springing back
+          if (onSwipeProgress) {
+            onSwipeProgress(0);
+          }
           // Ensure all values are reset to 0
           translateX.setValue(0);
           translateY.setValue(0);
@@ -321,6 +326,10 @@ export const SwipeableCard = memo(function SwipeableCard({
             useNativeDriver: true,
           }),
         ]).start(() => {
+          // Reset neon zone opacity in parent when gesture is terminated
+          if (onSwipeProgress) {
+            onSwipeProgress(0);
+          }
           // Ensure all values are reset to 0
           translateX.setValue(0);
           translateY.setValue(0);
