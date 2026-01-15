@@ -6,7 +6,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+const Icon = MaterialCommunityIcons;
 
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { AppText } from '../../components/AppText';
@@ -14,7 +15,7 @@ import { GradientBackground } from '../../components';
 import { MainStackParamList } from '../../navigation/types';
 import { ROUTES } from '../../constants/routes';
 import { useTodayCollectionStore } from '../../stores/todayCollectionStore';
-import { OutfitSuggestion } from './HomeScreen';
+import { OutfitSuggestion } from './WearTodayScreen';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -95,7 +96,20 @@ export const CollectionsScreen: React.FC = () => {
           <AppText overlay variant="display" style={styles.headerTitle}>
             Collections
           </AppText>
-          <View style={{ width: 46 }} />
+          <TouchableOpacity
+            onPress={() => navigation.navigate(ROUTES.SOCIAL)}
+            style={[styles.backButton, { borderColor: colors.glassBorder, borderRadius: borderRadius.full }]}
+          >
+            {Platform.OS === 'ios' ? (
+              <BlurView intensity={blur.medium} tint="light" style={styles.backButtonInner}>
+                <Icon name="home" size={22} color="rgba(255,255,255,0.95)" />
+              </BlurView>
+            ) : (
+              <View style={[styles.backButtonInner, styles.backButtonAndroid]}>
+                <Icon name="home" size={22} color="rgba(255,255,255,0.95)" />
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Tabs */}

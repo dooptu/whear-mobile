@@ -18,8 +18,8 @@ import { useAppTheme } from '../hooks/useAppTheme';
 import { AppText } from './AppText';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.88;
-const CARD_HEIGHT = CARD_WIDTH * 1.35;
+const CARD_WIDTH = SCREEN_WIDTH * 0.92; // Increased from 0.88 to 0.92 for better swipe area
+const CARD_HEIGHT = CARD_WIDTH * 1.4; // Increased from 1.35 to 1.4 for better proportions
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 const ZONE_WIDTH = SCREEN_WIDTH * 0.5; // Half screen width for zone spread
 
@@ -39,6 +39,7 @@ interface Props {
   onSwipeRight: () => void;
   onSwipeProgress?: (dx: number) => void; // Callback to update zone opacity
   style?: any;
+  shouldFadeIn?: boolean; // For smooth fade-in animation when card becomes active
 }
 
 export const SwipeableCard = memo(function SwipeableCard({
@@ -48,6 +49,7 @@ export const SwipeableCard = memo(function SwipeableCard({
   onSwipeRight,
   onSwipeProgress,
   style,
+  shouldFadeIn = false,
 }: Props) {
   const { borderRadius, blur } = useAppTheme();
 
@@ -58,6 +60,7 @@ export const SwipeableCard = memo(function SwipeableCard({
   const nopeOpacity = useRef(new Animated.Value(0)).current;
   const likeZoneOpacity = useRef(new Animated.Value(0)).current; // Neon green zone
   const nopeZoneOpacity = useRef(new Animated.Value(0)).current; // Neon red zone
+  const fadeInOpacity = useRef(new Animated.Value(shouldFadeIn ? 0 : 1)).current;
   const isSwipingRef = useRef(false);
 
   // Memoize callbacks
@@ -72,12 +75,19 @@ export const SwipeableCard = memo(function SwipeableCard({
   // Update scale when isActive changes
   useEffect(() => {
     if (isActive) {
-      Animated.spring(scale, {
-        toValue: 1,
-        useNativeDriver: true,
-        damping: 15,
-        stiffness: 200,
-      }).start();
+      Animated.parallel([
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+          damping: 15,
+          stiffness: 200,
+        }),
+        Animated.timing(fadeInOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
       Animated.spring(scale, {
         toValue: 0.92,
@@ -86,7 +96,19 @@ export const SwipeableCard = memo(function SwipeableCard({
         stiffness: 200,
       }).start();
     }
-  }, [isActive, scale]);
+  }, [isActive, scale, fadeInOpacity]);
+
+  // Fade in animation when card becomes active after swipe
+  useEffect(() => {
+    if (shouldFadeIn && isActive) {
+      fadeInOpacity.setValue(0);
+      Animated.timing(fadeInOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [shouldFadeIn, isActive, fadeInOpacity]);
 
   // Reset card position when it becomes inactive (but only if not currently swiping)
   useEffect(() => {
@@ -363,7 +385,12 @@ export const SwipeableCard = memo(function SwipeableCard({
     <View style={[styles.container, style]} collapsable={false} pointerEvents="box-none">
 
       <Animated.View
-        style={[styles.card, { borderRadius: borderRadius.xl }, cardStyle]}
+        style={[
+          styles.card,
+          { borderRadius: borderRadius.xl },
+          cardStyle,
+          { opacity: fadeInOpacity },
+        ]}
         {...(isActive ? panResponder.panHandlers : {})}
         collapsable={false}
       >
@@ -371,9 +398,11 @@ export const SwipeableCard = memo(function SwipeableCard({
           source={{ uri: outfit.imageUri }}
           style={styles.image}
           contentFit="cover"
-          transition={200}
+          transition={300}
           cachePolicy="memory-disk"
           recyclingKey={outfit.id}
+          priority={isActive ? 'high' : 'normal'}
+          placeholderContentFit="cover"
           priority="high"
         />
 

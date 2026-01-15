@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { OutfitSuggestion } from '@/screens/home/HomeScreen';
+import { OutfitSuggestion } from '@/screens/home/WearTodayScreen';
 
 type TodayCollectionState = {
   accepted: OutfitSuggestion[];

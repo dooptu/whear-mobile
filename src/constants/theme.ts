@@ -3,7 +3,7 @@ import { MD3LightTheme, MD3DarkTheme, configureFonts } from 'react-native-paper'
 import type { MD3Theme } from 'react-native-paper';
 
 export const brandColors = {
-  // fallback gradient (HomeScreen uses outfit.bgGradient primarily)
+  // fallback gradient (WearTodayScreen uses outfit.bgGradient primarily)
   backgroundGradient: ['#B9B0AC', '#C7C0BD', '#D8D6D3'] as const,
 
   textPrimary: '#111827',

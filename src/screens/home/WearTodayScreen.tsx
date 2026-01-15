@@ -171,7 +171,7 @@ const mockOutfits: OutfitSuggestion[] = [
   },
 ];
 
-const HomeScreen: React.FC = () => {
+const WearTodayScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { colors, spacing, borderRadius, blur } = useAppTheme();
   const { addAccepted, addRejected, removeAccepted, removeRejected } = useTodayCollectionStore();
@@ -194,14 +194,8 @@ const HomeScreen: React.FC = () => {
       const endIndex = Math.min(outfits.length, startIndex + 6);
       const urls = outfits.slice(startIndex, endIndex).map((o) => o.imageUri);
       try {
-        // Prefetch with priority for immediate next card
-        if (urls.length > 0) {
-          await Image.prefetch(urls[0], { priority: 'high' });
-        }
-        // Prefetch remaining cards
-        if (urls.length > 1) {
-          await Promise.all(urls.slice(1).map(url => Image.prefetch(url, { priority: 'normal' }).catch(() => {})));
-        }
+        // Prefetch all cards in parallel for better performance
+        await Promise.all(urls.map(url => Image.prefetch(url, 'memory-disk').catch(() => {})));
       } catch (error) {
         // Silently fail
       }
@@ -605,6 +599,7 @@ const HomeScreen: React.FC = () => {
                   onSwipeLeft={onLeft}
                   onSwipeRight={onRight}
                   onSwipeProgress={isActive ? handleSwipeProgress : undefined}
+                  shouldFadeIn={idx === 0 && activeIndex > 0}
                   style={{
                     zIndex: 100 - idx, // Top card has highest zIndex
                     transform: [
@@ -751,8 +746,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   emptyState: {
     paddingBottom: 0,
@@ -773,6 +768,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   neonZoneScreen: {
     position: 'absolute',
@@ -795,18 +792,18 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    // Create ellipse shape using border radius - half ellipse from right edge
-    borderTopLeftRadius: SCREEN_HEIGHT,
-    borderBottomLeftRadius: SCREEN_HEIGHT,
+    // Create flatter ellipse shape - less round, more oval
+    borderTopLeftRadius: SCREEN_HEIGHT * 0.6, // Reduced from SCREEN_HEIGHT to make flatter
+    borderBottomLeftRadius: SCREEN_HEIGHT * 0.6,
   },
   neonZoneGradientLeft: {
     flex: 1,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    // Create ellipse shape using border radius - half ellipse from left edge
-    borderTopRightRadius: SCREEN_HEIGHT,
-    borderBottomRightRadius: SCREEN_HEIGHT,
+    // Create flatter ellipse shape - less round, more oval
+    borderTopRightRadius: SCREEN_HEIGHT * 0.6, // Reduced from SCREEN_HEIGHT to make flatter
+    borderBottomRightRadius: SCREEN_HEIGHT * 0.6,
   },
   neonZoneContent: {
     alignItems: 'center',
@@ -823,6 +820,6 @@ const styles = StyleSheet.create({
   },
 });
 
-HomeScreen.displayName = 'HomeScreen';
+WearTodayScreen.displayName = 'WearTodayScreen';
 
-export { HomeScreen };
+export { WearTodayScreen };
